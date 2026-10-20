@@ -1,0 +1,132 @@
+/* style.css — Минималистичный стиль Apple/Google Calendar */
+
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+:root {
+  --font-main: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --bg-page: #f8fafc;
+  --text-primary: #0f172a;
+  --text-secondary: #64748b;
+  --text-muted: #94a3b8;
+  --card-bg: #ffffff;
+  --border-color: #e2e8f0;
+  --accent: #6366f1;
+}
+
+[data-theme="dark"] {
+  --bg-page: #0b0f19;
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --card-bg: #111827;
+  --border-color: #1f2937;
+  --accent: #6366f1;
+}
+
+body {
+  font-family: var(--font-main);
+  background-color: var(--bg-page);
+  color: var(--text-primary);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Активная кнопка подгруппы в шапке */
+.active-pill {
+  background-color: #ffffff;
+  color: #4f46e5;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="dark"] .active-pill {
+  background-color: #1e293b;
+  color: #818cf8;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* Кнопка дня в календарной ленте */
+.day-pill {
+  min-width: 58px;
+  padding: 0.5rem 0.4rem;
+  border-radius: 0.85rem;
+  border: 1px solid var(--border-color);
+  background-color: var(--card-bg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15rem;
+  cursor: pointer;
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  user-select: none;
+}
+
+.day-pill:hover {
+  border-color: #818cf8;
+}
+
+.day-pill.active {
+  background-color: #6366f1;
+  border-color: #6366f1;
+  color: #ffffff !important;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
+}
+
+.day-pill.active span {
+  color: #ffffff !important;
+}
+
+/* Строка занятия (Apple/Google Calendar style) */
+.lesson-row {
+  position: relative;
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 1rem;
+  padding: 0.75rem 0.85rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.lesson-row:hover {
+  border-color: rgba(99, 102, 241, 0.4);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+}
+
+[data-theme="dark"] .lesson-row:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+
+/* Цветная полоска слева у пары */
+.lesson-bar {
+  width: 3.5px;
+  align-self: stretch;
+  border-radius: 9999px;
+  background-color: #6366f1; /* Общая пара */
+}
+
+.lesson-bar.sub-1 {
+  background-color: #10b981; /* 1 подгруппа: изумруд */
+}
+
+.lesson-bar.sub-2 {
+  background-color: #f59e0b; /* 2 подгруппа: янтарь */
+}
+
+/* Модальное окно */
+.modal-card {
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
+}
+
+/* Скрытие скроллбара */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
