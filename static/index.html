@@ -73,21 +73,12 @@
     </header>
 
     <!-- ═══════════════════════════════════════
-         2. Просторный переключатель подгрупп [Все] [1 подгруппа] [2 подгруппа]
-    ═══════════════════════════════════════ -->
-    <div class="flex items-center p-1 rounded-xl bg-slate-200/60 dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 text-xs font-semibold shadow-inner">
-      <button onclick="setSubgroup(0)" id="sg-0" class="flex-1 py-1.5 rounded-lg transition-all active-pill text-center">Все подгруппы</button>
-      <button onclick="setSubgroup(1)" id="sg-1" class="flex-1 py-1.5 rounded-lg transition-all text-center">1 подгруппа</button>
-      <button onclick="setSubgroup(2)" id="sg-2" class="flex-1 py-1.5 rounded-lg transition-all text-center">2 подгруппа</button>
-    </div>
-
-    <!-- ═══════════════════════════════════════
-         3. Компактная статусная строка: Текущая пара
+         2. Компактная статусная строка: Текущая пара
     ═══════════════════════════════════════ -->
     <div id="live-status-bar" class="hidden px-3.5 py-2 rounded-xl text-xs font-medium flex items-center justify-between border transition-all"></div>
 
     <!-- ═══════════════════════════════════════
-         4. Календарная лента дней недели (Пн, Вт, Ср...)
+         3. Календарная лента дней недели (Пн, Вт, Ср...)
     ═══════════════════════════════════════ -->
     <div class="space-y-1">
       <div id="days-ribbon" class="flex gap-1.5 overflow-x-auto no-scrollbar py-1">
@@ -96,7 +87,7 @@
     </div>
 
     <!-- ═══════════════════════════════════════
-         5. Список пар на выбранный день
+         4. Список пар на выбранный день
     ═══════════════════════════════════════ -->
     <div id="day-schedule-content" class="space-y-2 pt-1">
       <div class="text-center py-20 text-slate-400 text-sm">

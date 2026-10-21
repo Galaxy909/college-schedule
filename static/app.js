@@ -1,5 +1,5 @@
 /**
- * app.js — Чистый интерфейс расписания с раздельными подгруппами и временем внизу
+ * app.js — Логика расписания с автоматическим выводом 1 и 2 подгрупп друг под другом
  */
 
 const state = {
@@ -7,7 +7,6 @@ const state = {
   selectedGroupId: localStorage.getItem("my_schedule_group") || null,
   currentSchedule: null,
   selectedDayIndex: 0,
-  activeSubgroup: parseInt(localStorage.getItem("my_schedule_subgroup") || "0", 10), // 0 - все, 1 - 1-я, 2 - 2-я
 };
 
 const DEFAULT_BELLS = [
@@ -46,7 +45,6 @@ if ("serviceWorker" in navigator) {
 
 document.addEventListener("DOMContentLoaded", () => {
   initTheme();
-  updateSubgroupUI();
   loadGroups();
   startLiveTimer();
 
@@ -223,7 +221,7 @@ function renderDaysRibbon() {
 }
 
 // ─────────────────────────────────────────────
-// 4. Список пар: группировка подгрупп и время внизу
+// 4. Список пар: подгруппы друг под другом, время внизу
 // ─────────────────────────────────────────────
 function renderDaySchedule() {
   updateLiveStatusBar();
@@ -247,45 +245,25 @@ function renderDaySchedule() {
     pairsMap.get(l.number).push(l);
   });
 
-  // Получаем отсортированные номера пар
   const pairNumbers = Array.from(pairsMap.keys()).sort((a, b) => a - b);
 
-  // Фильтруем пары, у которых есть видимые уроки
-  let renderedCount = 0;
   const list = document.createElement("div");
   list.className = "space-y-2.5";
 
   pairNumbers.forEach((num) => {
     const pairLessons = pairsMap.get(num);
-
-    // Фильтруем уроки этой пары по активной подгруппе
-    const visibleLessons = pairLessons.filter((l) => {
-      if (state.activeSubgroup === 0) return true;
-      return l.subgroup === 0 || l.subgroup === state.activeSubgroup;
-    });
-
-    if (visibleLessons.length === 0) return;
-    renderedCount++;
-
     const bell = BELL_SCHEDULE.find((b) => b.num === num);
     const timeStr = bell ? bell.timeStr : `Пара ${num}`;
 
     const card = document.createElement("div");
     card.className = "lesson-card";
 
-    // СЛУЧАЙ А: Пара общая для всех ИЛИ выбрана конкретная подгруппа
-    if (visibleLessons.length === 1) {
-      const lesson = visibleLessons[0];
-      const subBadge = lesson.subgroup === 1
-        ? `<span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-500">1 подгруппа</span>`
-        : lesson.subgroup === 2
-        ? `<span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-500">2 подгруппа</span>`
-        : "";
-
+    // СЛУЧАЙ А: Пара общая (один предмет для всей группы)
+    if (pairLessons.length === 1 && pairLessons[0].subgroup === 0) {
+      const lesson = pairLessons[0];
       card.innerHTML = `
-        <div class="flex items-center justify-between gap-2 mb-1.5">
-          <span class="text-xs font-bold text-indigo-500 dark:text-indigo-400">№ ${lesson.number} пара</span>
-          ${subBadge}
+        <div class="mb-1.5">
+          <span class="text-xs font-bold text-indigo-500 dark:text-indigo-400">Пара № ${lesson.number}</span>
         </div>
         <h4 class="font-bold text-sm text-slate-900 dark:text-white leading-snug">
           ${lesson.subject}
@@ -294,7 +272,7 @@ function renderDaySchedule() {
           ${lesson.room ? `<span class="font-bold text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md">каб. ${lesson.room}</span>` : ""}
           ${lesson.teacher ? `<span>👤 ${lesson.teacher}</span>` : ""}
         </div>
-        <!-- ВРЕМЯ НАЧАЛА И ОКОНЧАНИЯ ВНИЗУ ПОД ПРЕДМЕТОМ -->
+        <!-- ВРЕМЯ ВНИЗУ ПОД ПРЕДМЕТОМ -->
         <div class="mt-3 pt-2 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between">
           <span class="time-badge">
             <i data-lucide="clock" class="w-3 h-3 text-indigo-500"></i>
@@ -303,19 +281,22 @@ function renderDaySchedule() {
         </div>
       `;
     } else {
-      // СЛУЧАЙ Б: Пара разделена (1 подгруппа на одном предмете, 2-я на другом)
+      // СЛУЧАЙ Б: Пара разделена на 1 и 2 подгруппы (выводим друг под другом)
+      // Сортируем: 1 подгруппа сверху, 2 подгруппа под ней
+      const sortedSubLessons = [...pairLessons].sort((a, b) => a.subgroup - b.subgroup);
+
       let subBlocksHTML = "";
-      visibleLessons.forEach((l) => {
-        const subClass = l.subgroup === 1 ? "sub-1" : "sub-2";
-        const subLabel = l.subgroup === 1
-          ? `<span class="text-[10px] font-extrabold text-emerald-500 uppercase tracking-wide">1-я подгруппа</span>`
-          : `<span class="text-[10px] font-extrabold text-amber-500 uppercase tracking-wide">2-я подгруппа</span>`;
+      sortedSubLessons.forEach((l) => {
+        const isSub1 = l.subgroup === 1;
+        const subClass = isSub1 ? "sub-1" : "sub-2";
+        const subTitle = isSub1 ? "1 подгруппа" : "2 подгруппа";
+        const badgeColor = isSub1 ? "text-emerald-500 bg-emerald-500/10" : "text-amber-500 bg-amber-500/10";
 
         subBlocksHTML += `
-          <div class="subgroup-block ${subClass} space-y-1">
-            <div class="flex items-center justify-between">
-              ${subLabel}
-              ${l.room ? `<span class="font-bold text-xs text-slate-700 dark:text-slate-300 bg-white/70 dark:bg-slate-800/80 px-2 py-0.5 rounded-md">каб. ${l.room}</span>` : ""}
+          <div class="subgroup-line ${subClass} space-y-1">
+            <div class="flex items-center justify-between gap-1">
+              <span class="text-[11px] font-extrabold px-1.5 py-0.5 rounded ${badgeColor} uppercase tracking-wider">${subTitle}</span>
+              ${l.room ? `<span class="font-bold text-xs text-slate-700 dark:text-slate-200 bg-white/80 dark:bg-slate-800/80 px-2 py-0.5 rounded-md">каб. ${l.room}</span>` : ""}
             </div>
             <div class="font-bold text-sm text-slate-900 dark:text-white leading-snug">${l.subject}</div>
             ${l.teacher ? `<div class="text-xs text-slate-500 dark:text-slate-400 font-medium">👤 ${l.teacher}</div>` : ""}
@@ -324,14 +305,13 @@ function renderDaySchedule() {
       });
 
       card.innerHTML = `
-        <div class="flex items-center justify-between gap-2 mb-2">
-          <span class="text-xs font-bold text-indigo-500 dark:text-indigo-400">№ ${num} пара</span>
-          <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-500">Разделение по подгруппам</span>
+        <div class="mb-2">
+          <span class="text-xs font-bold text-indigo-500 dark:text-indigo-400">Пара № ${num}</span>
         </div>
         <div class="space-y-2">
           ${subBlocksHTML}
         </div>
-        <!-- ВРЕМЯ НАЧАЛА И ОКОНЧАНИЯ ВНИЗУ ПОД ПРЕДМЕТОМ -->
+        <!-- ВРЕМЯ ВНИЗУ ПОД ПРЕДМЕТАМИ -->
         <div class="mt-3 pt-2 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between">
           <span class="time-badge">
             <i data-lucide="clock" class="w-3 h-3 text-indigo-500"></i>
@@ -344,21 +324,20 @@ function renderDaySchedule() {
     list.appendChild(card);
   });
 
-  // Шапка дня недели
   const header = document.createElement("div");
   header.className = "flex items-center justify-between text-xs font-bold text-slate-500 dark:text-slate-400 px-1 pt-1 pb-1";
   header.innerHTML = `
     <span>${currentDay.day_info}</span>
-    <span>${renderedCount} пар</span>
+    <span>${pairNumbers.length} пар</span>
   `;
   container.appendChild(header);
 
-  if (renderedCount === 0) {
+  if (pairNumbers.length === 0) {
     const empty = document.createElement("div");
     empty.className = "py-12 text-center text-xs text-slate-400 space-y-1";
     empty.innerHTML = `
       <p class="text-base font-bold text-slate-600 dark:text-slate-300">Пар нет 🎉</p>
-      <p>Для выбранной подгруппы на этот день занятий не запланировано</p>
+      <p>На этот день занятий не запланировано</p>
     `;
     container.appendChild(empty);
   } else {
@@ -394,32 +373,24 @@ function updateLiveStatusBar() {
   const prefix = `${dayStr}.${monthStr}`;
 
   const todayData = state.currentSchedule.days.find((d) => d.day_info.includes(prefix));
-  if (!todayData) {
+  if (!todayData || !todayData.lessons || todayData.lessons.length === 0) {
     bar.classList.add("hidden");
     return;
   }
 
-  const todayLessons = todayData.lessons.filter((l) => {
-    if (state.activeSubgroup === 0) return true;
-    return l.subgroup === 0 || l.subgroup === state.activeSubgroup;
-  });
-
-  if (todayLessons.length === 0) {
-    bar.classList.add("hidden");
-    return;
-  }
-
-  let currentLesson = null;
-  let nextLesson = null;
+  let currentLessons = [];
+  let nextLessons = [];
   let isBreak = false;
   let secondsRemaining = 0;
+  let activePairNum = null;
 
   for (const bell of BELL_SCHEDULE) {
-    const lesson = todayLessons.find((l) => l.number === bell.num);
-    if (!lesson) continue;
+    const matching = todayData.lessons.filter((l) => l.number === bell.num);
+    if (matching.length === 0) continue;
 
     if (currentMinutes >= bell.start && currentMinutes < bell.end) {
-      currentLesson = lesson;
+      currentLessons = matching;
+      activePairNum = bell.num;
       const endSec = bell.end * 60;
       const nowSec = currentMinutes * 60 + currentSeconds;
       secondsRemaining = Math.max(0, endSec - nowSec);
@@ -427,7 +398,8 @@ function updateLiveStatusBar() {
     }
 
     if (currentMinutes < bell.start && currentMinutes >= bell.start - 30) {
-      nextLesson = lesson;
+      nextLessons = matching;
+      activePairNum = bell.num;
       isBreak = true;
       const startSec = bell.start * 60;
       const nowSec = currentMinutes * 60 + currentSeconds;
@@ -436,31 +408,46 @@ function updateLiveStatusBar() {
     }
   }
 
-  if (currentLesson) {
+  if (currentLessons.length > 0) {
     bar.classList.remove("hidden");
     bar.className = "px-3 py-2 rounded-xl text-xs font-medium flex items-center justify-between border bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400";
     const mins = Math.floor(secondsRemaining / 60);
     const secs = secondsRemaining % 60;
 
+    let textDesc = "";
+    if (currentLessons.length === 1) {
+      const l = currentLessons[0];
+      textDesc = `${l.subject} ${l.room ? `(каб. ${l.room})` : ""}`;
+    } else {
+      textDesc = currentLessons.map((l) => `${l.subgroup} п/г: ${l.subject}`).join(" | ");
+    }
+
     bar.innerHTML = `
       <div class="flex items-center gap-1.5 truncate">
         <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-        <span class="font-bold">Идёт ${currentLesson.number} пара:</span>
-        <span class="truncate">${currentLesson.subject} ${currentLesson.room ? `(каб. ${currentLesson.room})` : ""}</span>
+        <span class="font-bold">Идёт ${activePairNum} пара:</span>
+        <span class="truncate">${textDesc}</span>
       </div>
       <span class="font-mono font-bold whitespace-nowrap pl-2">${mins}м ${secs < 10 ? "0" : ""}${secs}с</span>
     `;
-  } else if (isBreak && nextLesson) {
+  } else if (isBreak && nextLessons.length > 0) {
     bar.classList.remove("hidden");
     bar.className = "px-3 py-2 rounded-xl text-xs font-medium flex items-center justify-between border bg-amber-500/10 border-amber-500/30 text-amber-600 dark:text-amber-400";
     const mins = Math.floor(secondsRemaining / 60);
     const secs = secondsRemaining % 60;
 
+    let textDesc = "";
+    if (nextLessons.length === 1) {
+      textDesc = nextLessons[0].subject;
+    } else {
+      textDesc = nextLessons.map((l) => `${l.subgroup} п/г: ${l.subject}`).join(" | ");
+    }
+
     bar.innerHTML = `
       <div class="flex items-center gap-1.5 truncate">
         <span class="w-2 h-2 rounded-full bg-amber-500"></span>
         <span class="font-bold">Перемена:</span>
-        <span class="truncate">скоро ${nextLesson.number} пара ${nextLesson.subject}</span>
+        <span class="truncate">скоро ${activePairNum} пара (${textDesc})</span>
       </div>
       <span class="font-mono font-bold whitespace-nowrap pl-2">до пары ${mins}м ${secs < 10 ? "0" : ""}${secs}с</span>
     `;
@@ -470,30 +457,7 @@ function updateLiveStatusBar() {
 }
 
 // ─────────────────────────────────────────────
-// 6. Подгруппы [Все подгруппы] [1 подгруппа] [2 подгруппа]
-// ─────────────────────────────────────────────
-function setSubgroup(sg) {
-  state.activeSubgroup = sg;
-  localStorage.setItem("my_schedule_subgroup", sg);
-  updateSubgroupUI();
-  renderDaySchedule();
-}
-
-function updateSubgroupUI() {
-  [0, 1, 2].forEach((num) => {
-    const btn = document.getElementById(`sg-${num}`);
-    if (btn) {
-      if (num === state.activeSubgroup) {
-        btn.classList.add("active-pill");
-      } else {
-        btn.classList.remove("active-pill");
-      }
-    }
-  });
-}
-
-// ─────────────────────────────────────────────
-// 7. Тема оформления
+// 6. Тема оформления
 // ─────────────────────────────────────────────
 function initTheme() {
   const saved = localStorage.getItem("theme") || "dark";
@@ -518,7 +482,7 @@ function updateThemeIcon(theme) {
 }
 
 // ─────────────────────────────────────────────
-// 8. Настройки звонков
+// 7. Настройки звонков
 // ─────────────────────────────────────────────
 function openBellSettings() {
   const modal = document.getElementById("bell-modal");
