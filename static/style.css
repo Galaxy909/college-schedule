@@ -1,4 +1,4 @@
-/* style.css — Минималистичный и чистый стиль расписания */
+/* style.css — Премиальный дизайн расписания по референсу */
 
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
@@ -10,17 +10,21 @@
   --text-muted: #94a3b8;
   --card-bg: #ffffff;
   --border-color: #e2e8f0;
+  --divider-color: #f1f5f9;
   --accent: #6366f1;
+  --subgroup-color: #0284c7;
 }
 
 [data-theme="dark"] {
-  --bg-page: #0b0f19;
+  --bg-page: #0b0f17;
   --text-primary: #f8fafc;
   --text-secondary: #94a3b8;
   --text-muted: #64748b;
-  --card-bg: #111827;
-  --border-color: #1f2937;
+  --card-bg: #111823;
+  --border-color: #1c2433;
+  --divider-color: #1b2332;
   --accent: #6366f1;
+  --subgroup-color: #38bdf8;
 }
 
 body {
@@ -69,54 +73,31 @@ body {
   position: relative;
   background-color: var(--card-bg);
   border: 1px solid var(--border-color);
-  border-radius: 1rem;
-  padding: 0.85rem 1rem;
+  border-radius: 1.15rem;
+  padding: 0.95rem 1.1rem;
   transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .lesson-card:hover {
-  border-color: rgba(99, 102, 241, 0.4);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+  border-color: rgba(99, 102, 241, 0.35);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
 }
 
 [data-theme="dark"] .lesson-card:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
 }
 
-/* Строка подгруппы внутри карточки пары */
-.subgroup-line {
-  position: relative;
-  padding: 0.5rem 0.65rem;
-  border-radius: 0.75rem;
-  background-color: rgba(241, 245, 249, 0.6);
-  border-left: 3.5px solid #6366f1;
+/* Разделительная линия внутри карточки */
+.card-divider {
+  height: 1px;
+  background-color: var(--divider-color);
+  margin-top: 0.75rem;
+  margin-bottom: 0.75rem;
 }
 
-[data-theme="dark"] .subgroup-line {
-  background-color: rgba(30, 41, 59, 0.45);
-}
-
-.subgroup-line.sub-1 {
-  border-left-color: #10b981; /* Зелёный для 1 подгруппы */
-}
-
-.subgroup-line.sub-2 {
-  border-left-color: #f59e0b; /* Оранжевый для 2 подгруппы */
-}
-
-/* Плашка времени внизу карточки под предметом */
-.time-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  font-size: 0.6875rem;
-  font-weight: 600;
-  color: var(--text-secondary);
-  background-color: rgba(148, 163, 184, 0.12);
-  border: 1px solid var(--border-color);
-  padding: 0.2rem 0.55rem;
-  border-radius: 0.5rem;
+/* Цвет названия подгруппы (голубой как на скриншоте) */
+.subgroup-label {
+  color: var(--subgroup-color);
 }
 
 /* Модальное окно настроек звонков */

@@ -1,5 +1,8 @@
 /**
- * app.js — Логика расписания с автоматическим выводом 1 и 2 подгрупп друг под другом
+ * app.js — Логика расписания с точным дизайном карточек по референсу:
+ * - Подгруппы выводятся друг под другом в одной карточке
+ * - Разделители как на скриншоте
+ * - Одиночные пары в компактном виде (время слева, предмет по центру, кабинет и пара справа)
  */
 
 const state = {
@@ -9,13 +12,15 @@ const state = {
   selectedDayIndex: 0,
 };
 
+// Реальное расписание звонков колледжа (как на скриншоте)
 const DEFAULT_BELLS = [
-  { num: 1, startStr: "08:30", endStr: "10:00" },
-  { num: 2, startStr: "10:10", endStr: "11:40" },
-  { num: 3, startStr: "12:10", endStr: "13:40" },
-  { num: 4, startStr: "13:50", endStr: "15:20" },
-  { num: 5, startStr: "15:30", endStr: "17:00" },
-  { num: 6, startStr: "17:10", endStr: "18:40" },
+  { num: 1, startStr: "08:15", endStr: "09:50" },
+  { num: 2, startStr: "10:00", endStr: "11:35" },
+  { num: 3, startStr: "12:05", endStr: "13:40" },
+  { num: 4, startStr: "13:50", endStr: "15:25" },
+  { num: 5, startStr: "15:35", endStr: "17:10" },
+  { num: 6, startStr: "17:20", endStr: "18:55" },
+  { num: 7, startStr: "19:05", endStr: "20:40" },
 ];
 
 function timeToMinutes(str) {
@@ -24,7 +29,7 @@ function timeToMinutes(str) {
 }
 
 function loadBellSchedule() {
-  const saved = localStorage.getItem("my_schedule_bells");
+  const saved = localStorage.getItem("my_schedule_bells_v2");
   const raw = saved ? JSON.parse(saved) : DEFAULT_BELLS;
   return raw.map((b) => ({
     num: b.num,
@@ -32,13 +37,19 @@ function loadBellSchedule() {
     endStr: b.endStr,
     start: timeToMinutes(b.startStr),
     end: timeToMinutes(b.endStr),
-    timeStr: `${b.startStr} – ${b.endStr}`,
+    timeStr: `${b.startStr}–${b.endStr}`,
   }));
 }
 
 let BELL_SCHEDULE = loadBellSchedule();
 
-// PWA
+// Очистка текста от переносов строк и лишних пробелов с сайта колледжа
+function cleanString(str) {
+  if (!str) return "";
+  return str.replace(/\r?\n|\r/g, " ").replace(/\s+/g, " ").trim();
+}
+
+// PWA Service Worker
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("/static/sw.js").catch(console.error);
 }
@@ -48,7 +59,7 @@ document.addEventListener("DOMContentLoaded", () => {
   loadGroups();
   startLiveTimer();
 
-  // Закрывать дропдаун при клике мимо него
+  // Закрывать дропдаун групп при клике вне его
   document.addEventListener("click", (e) => {
     const dropdown = document.getElementById("group-dropdown-menu");
     const btn = document.getElementById("group-dropdown-btn");
@@ -62,7 +73,7 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 // ─────────────────────────────────────────────
-// 1. Дропдаун со стрелочкой для выбора группы
+// 1. Дропдаун для выбора группы
 // ─────────────────────────────────────────────
 async function loadGroups() {
   try {
@@ -142,7 +153,7 @@ function filterDropdownGroups() {
 }
 
 // ─────────────────────────────────────────────
-// 2. Выбор группы и загрузка расписания
+// 2. Выбор группы и получение расписания
 // ─────────────────────────────────────────────
 async function selectGroup(groupId) {
   state.selectedGroupId = groupId;
@@ -221,7 +232,7 @@ function renderDaysRibbon() {
 }
 
 // ─────────────────────────────────────────────
-// 4. Список пар: подгруппы друг под другом, время внизу
+// 4. Список пар: Точный дизайн карточек по референсу
 // ─────────────────────────────────────────────
 function renderDaySchedule() {
   updateLiveStatusBar();
@@ -248,76 +259,101 @@ function renderDaySchedule() {
   const pairNumbers = Array.from(pairsMap.keys()).sort((a, b) => a - b);
 
   const list = document.createElement("div");
-  list.className = "space-y-2.5";
+  list.className = "space-y-3";
 
   pairNumbers.forEach((num) => {
     const pairLessons = pairsMap.get(num);
     const bell = BELL_SCHEDULE.find((b) => b.num === num);
     const timeStr = bell ? bell.timeStr : `Пара ${num}`;
+    const startStr = bell ? bell.startStr : "";
+    const endStr = bell ? bell.endStr : "";
 
     const card = document.createElement("div");
     card.className = "lesson-card";
 
-    // СЛУЧАЙ А: Пара общая (один предмет для всей группы)
-    if (pairLessons.length === 1 && pairLessons[0].subgroup === 0) {
+    // Проверяем: пара разделена на подгруппы или общая
+    const isSplit = pairLessons.length > 1 || pairLessons.some((l) => l.subgroup > 0);
+
+    if (!isSplit) {
+      // ═════════════════════════════════════════════
+      // СЛУЧАЙ 1: Общая пара для всей группы (как 3 пара на скриншоте)
+      // 3 колонки: [Время начала/конца] | [Предмет/Учитель] | [Кабинет/Номер пары]
+      // ═════════════════════════════════════════════
       const lesson = pairLessons[0];
+      const subj = cleanString(lesson.subject);
+      const teacher = cleanString(lesson.teacher);
+      const room = cleanString(lesson.room);
+
       card.innerHTML = `
-        <div class="mb-1.5">
-          <span class="text-xs font-bold text-indigo-500 dark:text-indigo-400">Пара № ${lesson.number}</span>
-        </div>
-        <h4 class="font-bold text-sm text-slate-900 dark:text-white leading-snug">
-          ${lesson.subject}
-        </h4>
-        <div class="flex flex-wrap items-center gap-2.5 text-xs text-slate-500 dark:text-slate-400 mt-1.5 font-medium">
-          ${lesson.room ? `<span class="font-bold text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md">каб. ${lesson.room}</span>` : ""}
-          ${lesson.teacher ? `<span>👤 ${lesson.teacher}</span>` : ""}
-        </div>
-        <!-- ВРЕМЯ ВНИЗУ ПОД ПРЕДМЕТОМ -->
-        <div class="mt-3 pt-2 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between">
-          <span class="time-badge">
-            <i data-lucide="clock" class="w-3 h-3 text-indigo-500"></i>
-            ${timeStr}
-          </span>
+        <div class="flex items-center justify-between gap-3">
+          <!-- Колонка 1: Время (друг под другом) -->
+          <div class="flex flex-col flex-shrink-0 text-left min-w-[50px]">
+            <span class="text-sm sm:text-base font-bold text-slate-900 dark:text-white leading-tight">${startStr || "—"}</span>
+            <span class="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400 leading-tight mt-0.5">${endStr}</span>
+          </div>
+
+          <!-- Колонка 2: Предмет и Преподаватель (по центру) -->
+          <div class="flex-1 min-w-0 px-1 text-left">
+            <div class="font-bold text-sm sm:text-base text-slate-900 dark:text-white leading-snug line-clamp-2">${subj}</div>
+            ${teacher ? `<div class="text-xs sm:text-sm font-normal text-slate-500 dark:text-slate-400 truncate mt-0.5">${teacher}</div>` : ""}
+          </div>
+
+          <!-- Колонка 3: Кабинет и Пара (справа) -->
+          <div class="flex flex-col flex-shrink-0 text-right min-w-[52px]">
+            <span class="text-sm sm:text-base font-bold text-slate-900 dark:text-white leading-tight">${room || "—"}</span>
+            <span class="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400 leading-tight mt-0.5">${num} пара</span>
+          </div>
         </div>
       `;
     } else {
-      // СЛУЧАЙ Б: Пара разделена на 1 и 2 подгруппы (выводим друг под другом)
-      // Сортируем: 1 подгруппа сверху, 2 подгруппа под ней
-      const sortedSubLessons = [...pairLessons].sort((a, b) => a.subgroup - b.subgroup);
+      // ═════════════════════════════════════════════
+      // СЛУЧАЙ 2: Пара с подгруппами (как 1 и 2 пары на скриншоте)
+      // Вверху: Время и N-я пара
+      // Линия-разделитель
+      // 1-я подгруппа ... Кабинет
+      // Предмет
+      // Преподаватель
+      // Линия-разделитель
+      // 2-я подгруппа ... Кабинет
+      // Предмет
+      // Преподаватель
+      // ═════════════════════════════════════════════
+      const sortedLessons = [...pairLessons].sort((a, b) => a.subgroup - b.subgroup);
 
-      let subBlocksHTML = "";
-      sortedSubLessons.forEach((l) => {
-        const isSub1 = l.subgroup === 1;
-        const subClass = isSub1 ? "sub-1" : "sub-2";
-        const subTitle = isSub1 ? "1 подгруппа" : "2 подгруппа";
-        const badgeColor = isSub1 ? "text-emerald-500 bg-emerald-500/10" : "text-amber-500 bg-amber-500/10";
+      let subgroupsHTML = "";
+      sortedLessons.forEach((l, index) => {
+        const subj = cleanString(l.subject);
+        const teacher = cleanString(l.teacher);
+        const room = cleanString(l.room);
+        const subTitle = l.subgroup > 0 ? `${l.subgroup}-я подгруппа` : "Вся группа";
 
-        subBlocksHTML += `
-          <div class="subgroup-line ${subClass} space-y-1">
-            <div class="flex items-center justify-between gap-1">
-              <span class="text-[11px] font-extrabold px-1.5 py-0.5 rounded ${badgeColor} uppercase tracking-wider">${subTitle}</span>
-              ${l.room ? `<span class="font-bold text-xs text-slate-700 dark:text-slate-200 bg-white/80 dark:bg-slate-800/80 px-2 py-0.5 rounded-md">каб. ${l.room}</span>` : ""}
+        // Если это не первая подгруппа, добавляем тонкую разделительную линию
+        const divider = index > 0 ? `<div class="card-divider"></div>` : "";
+
+        subgroupsHTML += `
+          ${divider}
+          <div class="space-y-0.5 text-left">
+            <div class="flex items-center justify-between text-xs sm:text-sm">
+              <span class="subgroup-label font-semibold">${subTitle}</span>
+              <span class="font-bold text-slate-900 dark:text-white text-sm sm:text-base">${room}</span>
             </div>
-            <div class="font-bold text-sm text-slate-900 dark:text-white leading-snug">${l.subject}</div>
-            ${l.teacher ? `<div class="text-xs text-slate-500 dark:text-slate-400 font-medium">👤 ${l.teacher}</div>` : ""}
+            <div class="font-bold text-base sm:text-lg text-slate-900 dark:text-white leading-snug pt-0.5">${subj}</div>
+            ${teacher ? `<div class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-normal pt-0.5">${teacher}</div>` : ""}
           </div>
         `;
       });
 
       card.innerHTML = `
-        <div class="mb-2">
-          <span class="text-xs font-bold text-indigo-500 dark:text-indigo-400">Пара № ${num}</span>
+        <!-- Шапка: Время слева, Номер пары справа -->
+        <div class="flex items-center justify-between">
+          <span class="text-sm sm:text-base font-bold text-slate-900 dark:text-white tracking-tight">${timeStr}</span>
+          <span class="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400">${num}-я пара</span>
         </div>
-        <div class="space-y-2">
-          ${subBlocksHTML}
-        </div>
-        <!-- ВРЕМЯ ВНИЗУ ПОД ПРЕДМЕТАМИ -->
-        <div class="mt-3 pt-2 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between">
-          <span class="time-badge">
-            <i data-lucide="clock" class="w-3 h-3 text-indigo-500"></i>
-            ${timeStr}
-          </span>
-        </div>
+
+        <div class="card-divider"></div>
+
+        <!-- Блоки подгрупп -->
+        ${subgroupsHTML}
       `;
     }
 
@@ -417,9 +453,9 @@ function updateLiveStatusBar() {
     let textDesc = "";
     if (currentLessons.length === 1) {
       const l = currentLessons[0];
-      textDesc = `${l.subject} ${l.room ? `(каб. ${l.room})` : ""}`;
+      textDesc = `${cleanString(l.subject)} ${l.room ? `(${cleanString(l.room)})` : ""}`;
     } else {
-      textDesc = currentLessons.map((l) => `${l.subgroup} п/г: ${l.subject}`).join(" | ");
+      textDesc = currentLessons.map((l) => `${l.subgroup} п/г: ${cleanString(l.subject)}`).join(" | ");
     }
 
     bar.innerHTML = `
@@ -438,9 +474,9 @@ function updateLiveStatusBar() {
 
     let textDesc = "";
     if (nextLessons.length === 1) {
-      textDesc = nextLessons[0].subject;
+      textDesc = cleanString(nextLessons[0].subject);
     } else {
-      textDesc = nextLessons.map((l) => `${l.subgroup} п/г: ${l.subject}`).join(" | ");
+      textDesc = nextLessons.map((l) => `${l.subgroup} п/г: ${cleanString(l.subject)}`).join(" | ");
     }
 
     bar.innerHTML = `
@@ -457,7 +493,7 @@ function updateLiveStatusBar() {
 }
 
 // ─────────────────────────────────────────────
-// 6. Тема оформления
+// 6. Тема оформления (Светлая / Тёмная)
 // ─────────────────────────────────────────────
 function initTheme() {
   const saved = localStorage.getItem("theme") || "dark";
@@ -517,25 +553,26 @@ function closeBellSettings() {
 
 function saveBellSettings() {
   const newBells = [];
-  for (let i = 1; i <= 6; i++) {
-    const startInput = document.getElementById(`bell-start-${i}`);
-    const endInput = document.getElementById(`bell-end-${i}`);
+  BELL_SCHEDULE.forEach((b) => {
+    const startInput = document.getElementById(`bell-start-${b.num}`);
+    const endInput = document.getElementById(`bell-end-${b.num}`);
     if (startInput && endInput) {
       newBells.push({
-        num: i,
+        num: b.num,
         startStr: startInput.value,
         endStr: endInput.value,
       });
     }
-  }
+  });
 
-  localStorage.setItem("my_schedule_bells", JSON.stringify(newBells));
+  localStorage.setItem("my_schedule_bells_v2", JSON.stringify(newBells));
   BELL_SCHEDULE = loadBellSchedule();
   closeBellSettings();
   renderDaySchedule();
 }
 
 function resetDefaultBells() {
+  localStorage.removeItem("my_schedule_bells_v2");
   localStorage.removeItem("my_schedule_bells");
   BELL_SCHEDULE = loadBellSchedule();
   openBellSettings();
