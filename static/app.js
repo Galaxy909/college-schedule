@@ -1,5 +1,5 @@
 /**
- * app.js — Чистый минималистичный интерфейс расписания (Apple/Google Calendar style)
+ * app.js — Чистый интерфейс расписания с раздельными подгруппами и временем внизу
  */
 
 const state = {
@@ -74,7 +74,6 @@ async function loadGroups() {
     state.allGroups = await res.json();
     renderDropdownGroups(state.allGroups);
 
-    // Если группа уже сохранена — загружаем её, иначе выбираем первую
     if (state.selectedGroupId) {
       selectGroup(state.selectedGroupId);
     } else if (state.allGroups.length > 0) {
@@ -165,9 +164,7 @@ async function selectGroup(groupId) {
 
     state.currentSchedule = await res.json();
 
-    // Определяем сегодняшний день недели или берем первый
     detectInitialDay();
-
     renderDaysRibbon();
     renderDaySchedule();
   } catch (err) {
@@ -179,7 +176,6 @@ async function selectGroup(groupId) {
   }
 }
 
-// Поиск сегодняшнего дня в расписании
 function detectInitialDay() {
   if (!state.currentSchedule || !state.currentSchedule.days) return;
 
@@ -202,11 +198,10 @@ function renderDaysRibbon() {
   if (!state.currentSchedule || !state.currentSchedule.days) return;
 
   state.currentSchedule.days.forEach((day, idx) => {
-    // day_info выглядит как "19.10.2026 Пн"
     const parts = day.day_info.split(" ");
-    const datePart = parts[0] || ""; // "19.10.2026"
-    const weekday = parts[1] || ""; // "Пн"
-    const dayNumber = datePart.split(".")[0] || ""; // "19"
+    const datePart = parts[0] || "";
+    const weekday = parts[1] || "";
+    const dayNumber = datePart.split(".")[0] || "";
 
     const pill = document.createElement("button");
     const isActive = idx === state.selectedDayIndex;
@@ -228,7 +223,7 @@ function renderDaysRibbon() {
 }
 
 // ─────────────────────────────────────────────
-// 4. Минималистичный список пар на выбранный день
+// 4. Список пар: группировка подгрупп и время внизу
 // ─────────────────────────────────────────────
 function renderDaySchedule() {
   updateLiveStatusBar();
@@ -243,22 +238,122 @@ function renderDaySchedule() {
 
   const currentDay = state.currentSchedule.days[state.selectedDayIndex];
 
-  // Фильтр по подгруппе
-  const filteredLessons = currentDay.lessons.filter((l) => {
-    if (state.activeSubgroup === 0) return true;
-    return l.subgroup === 0 || l.subgroup === state.activeSubgroup;
+  // Группируем уроки дня по номеру пары (1, 2, 3...)
+  const pairsMap = new Map();
+  currentDay.lessons.forEach((l) => {
+    if (!pairsMap.has(l.number)) {
+      pairsMap.set(l.number, []);
+    }
+    pairsMap.get(l.number).push(l);
   });
 
-  // Заголовок дня
+  // Получаем отсортированные номера пар
+  const pairNumbers = Array.from(pairsMap.keys()).sort((a, b) => a - b);
+
+  // Фильтруем пары, у которых есть видимые уроки
+  let renderedCount = 0;
+  const list = document.createElement("div");
+  list.className = "space-y-2.5";
+
+  pairNumbers.forEach((num) => {
+    const pairLessons = pairsMap.get(num);
+
+    // Фильтруем уроки этой пары по активной подгруппе
+    const visibleLessons = pairLessons.filter((l) => {
+      if (state.activeSubgroup === 0) return true;
+      return l.subgroup === 0 || l.subgroup === state.activeSubgroup;
+    });
+
+    if (visibleLessons.length === 0) return;
+    renderedCount++;
+
+    const bell = BELL_SCHEDULE.find((b) => b.num === num);
+    const timeStr = bell ? bell.timeStr : `Пара ${num}`;
+
+    const card = document.createElement("div");
+    card.className = "lesson-card";
+
+    // СЛУЧАЙ А: Пара общая для всех ИЛИ выбрана конкретная подгруппа
+    if (visibleLessons.length === 1) {
+      const lesson = visibleLessons[0];
+      const subBadge = lesson.subgroup === 1
+        ? `<span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-500">1 подгруппа</span>`
+        : lesson.subgroup === 2
+        ? `<span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-500">2 подгруппа</span>`
+        : "";
+
+      card.innerHTML = `
+        <div class="flex items-center justify-between gap-2 mb-1.5">
+          <span class="text-xs font-bold text-indigo-500 dark:text-indigo-400">№ ${lesson.number} пара</span>
+          ${subBadge}
+        </div>
+        <h4 class="font-bold text-sm text-slate-900 dark:text-white leading-snug">
+          ${lesson.subject}
+        </h4>
+        <div class="flex flex-wrap items-center gap-2.5 text-xs text-slate-500 dark:text-slate-400 mt-1.5 font-medium">
+          ${lesson.room ? `<span class="font-bold text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md">каб. ${lesson.room}</span>` : ""}
+          ${lesson.teacher ? `<span>👤 ${lesson.teacher}</span>` : ""}
+        </div>
+        <!-- ВРЕМЯ НАЧАЛА И ОКОНЧАНИЯ ВНИЗУ ПОД ПРЕДМЕТОМ -->
+        <div class="mt-3 pt-2 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between">
+          <span class="time-badge">
+            <i data-lucide="clock" class="w-3 h-3 text-indigo-500"></i>
+            ${timeStr}
+          </span>
+        </div>
+      `;
+    } else {
+      // СЛУЧАЙ Б: Пара разделена (1 подгруппа на одном предмете, 2-я на другом)
+      let subBlocksHTML = "";
+      visibleLessons.forEach((l) => {
+        const subClass = l.subgroup === 1 ? "sub-1" : "sub-2";
+        const subLabel = l.subgroup === 1
+          ? `<span class="text-[10px] font-extrabold text-emerald-500 uppercase tracking-wide">1-я подгруппа</span>`
+          : `<span class="text-[10px] font-extrabold text-amber-500 uppercase tracking-wide">2-я подгруппа</span>`;
+
+        subBlocksHTML += `
+          <div class="subgroup-block ${subClass} space-y-1">
+            <div class="flex items-center justify-between">
+              ${subLabel}
+              ${l.room ? `<span class="font-bold text-xs text-slate-700 dark:text-slate-300 bg-white/70 dark:bg-slate-800/80 px-2 py-0.5 rounded-md">каб. ${l.room}</span>` : ""}
+            </div>
+            <div class="font-bold text-sm text-slate-900 dark:text-white leading-snug">${l.subject}</div>
+            ${l.teacher ? `<div class="text-xs text-slate-500 dark:text-slate-400 font-medium">👤 ${l.teacher}</div>` : ""}
+          </div>
+        `;
+      });
+
+      card.innerHTML = `
+        <div class="flex items-center justify-between gap-2 mb-2">
+          <span class="text-xs font-bold text-indigo-500 dark:text-indigo-400">№ ${num} пара</span>
+          <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-500">Разделение по подгруппам</span>
+        </div>
+        <div class="space-y-2">
+          ${subBlocksHTML}
+        </div>
+        <!-- ВРЕМЯ НАЧАЛА И ОКОНЧАНИЯ ВНИЗУ ПОД ПРЕДМЕТОМ -->
+        <div class="mt-3 pt-2 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between">
+          <span class="time-badge">
+            <i data-lucide="clock" class="w-3 h-3 text-indigo-500"></i>
+            ${timeStr}
+          </span>
+        </div>
+      `;
+    }
+
+    list.appendChild(card);
+  });
+
+  // Шапка дня недели
   const header = document.createElement("div");
   header.className = "flex items-center justify-between text-xs font-bold text-slate-500 dark:text-slate-400 px-1 pt-1 pb-1";
   header.innerHTML = `
     <span>${currentDay.day_info}</span>
-    <span>${filteredLessons.length} пар</span>
+    <span>${renderedCount} пар</span>
   `;
   container.appendChild(header);
 
-  if (filteredLessons.length === 0) {
+  if (renderedCount === 0) {
     const empty = document.createElement("div");
     empty.className = "py-12 text-center text-xs text-slate-400 space-y-1";
     empty.innerHTML = `
@@ -266,60 +361,11 @@ function renderDaySchedule() {
       <p>Для выбранной подгруппы на этот день занятий не запланировано</p>
     `;
     container.appendChild(empty);
-    return;
+  } else {
+    container.appendChild(list);
   }
 
-  // Список пар
-  const list = document.createElement("div");
-  list.className = "space-y-1.5";
-
-  filteredLessons.forEach((lesson) => {
-    const bell = BELL_SCHEDULE.find((b) => b.num === lesson.number);
-    const timeStr = bell ? bell.timeStr : `Пара ${lesson.number}`;
-
-    const row = document.createElement("div");
-    row.className = "lesson-row";
-
-    // Цвет полоски: изумруд для 1 п/г, янтарь для 2 п/г, индиго для всех
-    const subClass = lesson.subgroup === 1 ? "sub-1" : lesson.subgroup === 2 ? "sub-2" : "";
-
-    // Бейдж подгруппы если она разделена
-    let subTag = "";
-    if (lesson.subgroup === 1) {
-      subTag = `<span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-500">1 п/г</span>`;
-    } else if (lesson.subgroup === 2) {
-      subTag = `<span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-500">2 п/г</span>`;
-    }
-
-    row.innerHTML = `
-      <div class="lesson-bar ${subClass}"></div>
-
-      <!-- Время и номер пары -->
-      <div class="min-w-[70px] text-left pt-0.5">
-        <span class="block text-xs font-bold text-slate-900 dark:text-white leading-none">${timeStr.split("–")[0].trim()}</span>
-        <span class="block text-[10px] font-medium text-slate-400 mt-1">${timeStr.split("–")[1]?.trim() || ""}</span>
-        <span class="inline-block text-[9px] font-bold uppercase tracking-wider text-indigo-500 mt-1">№${lesson.number} пара</span>
-      </div>
-
-      <!-- Основная инфа: предмет, кабинет, препод -->
-      <div class="flex-1 min-w-0">
-        <div class="flex items-start justify-between gap-1 mb-1">
-          <h4 class="font-bold text-sm text-slate-900 dark:text-white leading-snug">
-            ${lesson.subject}
-          </h4>
-          ${subTag}
-        </div>
-        <div class="flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
-          ${lesson.room ? `<span class="font-bold text-slate-700 dark:text-slate-200">каб. ${lesson.room}</span>` : ""}
-          ${lesson.teacher ? `<span>• ${lesson.teacher}</span>` : ""}
-        </div>
-      </div>
-    `;
-
-    list.appendChild(row);
-  });
-
-  container.appendChild(list);
+  if (window.lucide) lucide.createIcons();
 }
 
 // ─────────────────────────────────────────────
@@ -424,7 +470,7 @@ function updateLiveStatusBar() {
 }
 
 // ─────────────────────────────────────────────
-// 6. Подгруппы [Все] [1] [2]
+// 6. Подгруппы [Все подгруппы] [1 подгруппа] [2 подгруппа]
 // ─────────────────────────────────────────────
 function setSubgroup(sg) {
   state.activeSubgroup = sg;
@@ -498,6 +544,7 @@ function openBellSettings() {
   });
 
   modal.classList.remove("hidden");
+  if (window.lucide) lucide.createIcons();
 }
 
 function closeBellSettings() {
