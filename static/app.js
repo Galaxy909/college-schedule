@@ -51,7 +51,9 @@ function cleanString(str) {
 
 // PWA Service Worker
 if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("/static/sw.js").catch(console.error);
+  navigator.serviceWorker.register("/static/sw.js").then((reg) => {
+    reg.update();
+  }).catch(console.error);
 }
 
 document.addEventListener("DOMContentLoaded", () => {
