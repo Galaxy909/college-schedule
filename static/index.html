@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <meta name="theme-color" content="#0b0f19" />
+  <meta name="theme-color" content="#05060f" />
   <title>Расписание</title>
   
   <!-- Tailwind CSS -->
@@ -17,79 +17,98 @@
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
   
+  <!-- Google Fonts: Space Grotesk & Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700;800&display=swap" rel="stylesheet">
+
   <!-- PWA Manifest & Icons -->
-  <link rel="manifest" href="manifest.json?v=3" />
+  <link rel="manifest" href="manifest.json?v=4" />
   <link rel="apple-touch-icon" href="icon-192.png" />
   
-  <link rel="stylesheet" href="style.css?v=3" />
+  <link rel="stylesheet" href="style.css?v=4" />
 </head>
-<body class="selection:bg-indigo-500 selection:text-white">
+<body class="selection:bg-purple-500 selection:text-white">
 
-  <div class="max-w-xl mx-auto px-4 py-3 space-y-3 pb-16">
+  <!-- Аврора: неоновые фоновые градиенты -->
+  <div class="aurora-bg">
+    <div class="aurora-1"></div>
+    <div class="aurora-2"></div>
+  </div>
+
+  <div class="max-w-xl mx-auto px-4 py-3 space-y-3.5 pb-20 relative z-10">
 
     <!-- ═══════════════════════════════════════
          1. Верхняя панель: Переключатель режимов + Выбор + Настройки
     ═══════════════════════════════════════ -->
-    <header class="space-y-2.5 pt-1 pb-2 border-b border-slate-200/60 dark:border-slate-800/80">
+    <header class="space-y-3 pt-1">
       
       <!-- Верхняя строка: Табы [Группы / Преподаватели] + Настройки -->
       <div class="flex items-center justify-between gap-2">
         
-        <!-- Переключатель режима: Группы / Преподаватели -->
-        <div class="flex p-0.5 rounded-xl bg-slate-200/70 dark:bg-slate-800/80 text-xs font-semibold">
+        <!-- Переключатель режима: visionOS капсула -->
+        <div class="flex p-1 rounded-2xl vision-capsule text-xs font-semibold">
           <button id="mode-group-btn" onclick="switchMode('group')"
-            class="px-3 py-1.5 rounded-lg transition-all font-bold text-white bg-indigo-500 shadow-sm">
+            class="px-4 py-1.5 rounded-xl font-bold text-white bg-gradient-to-r from-violet-600 to-indigo-600 shadow-lg shadow-indigo-500/30 transition-all">
             Группы
           </button>
           <button id="mode-teacher-btn" onclick="switchMode('teacher')"
-            class="px-3 py-1.5 rounded-lg transition-all text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white">
+            class="px-4 py-1.5 rounded-xl text-slate-400 hover:text-white transition-all">
             Преподаватели
           </button>
         </div>
 
-        <!-- Кнопки справа: Настройки звонков и Тема -->
-        <div class="flex items-center gap-1.5">
+        <!-- Кнопки справа: Звонки и Тема -->
+        <div class="flex items-center gap-2">
           <button onclick="openBellSettings()"
-            class="w-9 h-9 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-center text-slate-600 hover:text-indigo-500 dark:text-slate-300 transition-colors shadow-sm"
+            class="w-10 h-10 rounded-2xl vision-capsule flex items-center justify-center text-slate-300 hover:text-white hover:scale-105 transition-all shadow-sm"
             title="Настройка звонков">
-            <i data-lucide="clock" class="w-4 h-4"></i>
+            <i data-lucide="clock" class="w-4 h-4 text-cyan-300"></i>
           </button>
 
           <button onclick="toggleTheme()" id="theme-toggle"
-            class="w-9 h-9 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-center text-slate-600 hover:text-indigo-500 dark:text-slate-300 transition-colors shadow-sm"
+            class="w-10 h-10 rounded-2xl vision-capsule flex items-center justify-center text-slate-300 hover:text-white hover:scale-105 transition-all shadow-sm"
             title="Сменить тему">
-            <i data-lucide="sun" id="theme-icon" class="w-4 h-4"></i>
+            <i data-lucide="sun" id="theme-icon" class="w-4 h-4 text-amber-300"></i>
           </button>
         </div>
 
       </div>
 
-      <!-- Вторая строка: Выбор текущей группы / преподавателя -->
+      <!-- Вторая строка: Селектор текущей группы / преподавателя -->
       <div class="relative">
         <button id="selector-dropdown-btn" onclick="toggleSelectorDropdown()"
-          class="w-full flex items-center justify-between gap-2 px-3.5 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-indigo-500 dark:hover:border-indigo-500 shadow-sm transition-all font-bold text-sm tracking-tight text-slate-900 dark:text-white">
-          <span id="selected-item-name">Выбрать группу</span>
-          <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400 transition-transform duration-150" id="selector-arrow"></i>
-        </button>
-
-        <!-- Выпадающее меню со списком и поиском -->
-        <div id="selector-dropdown-menu"
-          class="hidden absolute left-0 right-0 top-full mt-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl z-50 overflow-hidden flex flex-col">
-          <div class="p-2 border-b border-slate-100 dark:border-slate-800">
-            <div class="flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800/80 text-xs">
-              <i data-lucide="search" class="w-3.5 h-3.5 text-slate-400"></i>
-              <input id="selector-dropdown-search" type="text" placeholder="Поиск..."
-                oninput="filterDropdownItems()"
-                class="w-full bg-transparent focus:outline-none placeholder-slate-400 text-xs" />
+          class="w-full flex items-center justify-between p-3.5 rounded-2xl liquid-card group cursor-pointer text-left">
+          <div class="flex items-center gap-3 truncate">
+            <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-cyan-500 to-violet-500 flex items-center justify-center font-display font-bold text-white text-sm shadow-md flex-shrink-0" id="selector-avatar">
+              221
+            </div>
+            <div class="truncate">
+              <span id="selected-item-name" class="font-display text-base font-bold text-white tracking-tight block truncate">Выбрать группу</span>
+              <span class="text-xs text-slate-400 block truncate" id="selected-item-sub">Нажми для выбора</span>
             </div>
           </div>
-          <div id="dropdown-items-list" class="overflow-y-auto max-h-64 p-1 space-y-0.5 no-scrollbar"></div>
+          <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400 group-hover:text-white transition-transform duration-200 flex-shrink-0" id="selector-arrow"></i>
+        </button>
+
+        <!-- Стеклянное выпадающее меню с поиском -->
+        <div id="selector-dropdown-menu"
+          class="hidden absolute left-0 right-0 top-full mt-2 vision-capsule rounded-3xl shadow-2xl z-50 overflow-hidden flex flex-col p-1">
+          <div class="p-2 border-b border-white/10">
+            <div class="flex items-center gap-2 px-3 py-2 rounded-2xl bg-white/5 border border-white/10 text-xs">
+              <i data-lucide="search" class="w-3.5 h-3.5 text-cyan-400"></i>
+              <input id="selector-dropdown-search" type="text" placeholder="Поиск..."
+                oninput="filterDropdownItems()"
+                class="w-full bg-transparent focus:outline-none placeholder-slate-400 text-xs text-white" />
+            </div>
+          </div>
+          <div id="dropdown-items-list" class="overflow-y-auto max-h-64 p-1 space-y-1 no-scrollbar"></div>
         </div>
       </div>
 
       <!-- Третья строка: Лента закрепленных преподавателей (Быстрый доступ) -->
       <div id="pinned-chips-container" class="hidden">
-        <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5" id="pinned-chips-list">
+        <div class="flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5" id="pinned-chips-list">
           <!-- Генерируется через JS -->
         </div>
       </div>
@@ -97,15 +116,17 @@
     </header>
 
     <!-- ═══════════════════════════════════════
-         2. Компактная статусная строка: Текущая пара
+         2. visionOS Виджет: Текущая пара + Прогресс-бар
     ═══════════════════════════════════════ -->
-    <div id="live-status-bar" class="hidden px-3.5 py-2 rounded-xl text-xs font-medium flex items-center justify-between border transition-all"></div>
+    <div id="live-status-bar" class="hidden vision-capsule rounded-3xl p-4 space-y-3 transition-all relative overflow-hidden">
+      <!-- Генерируется динамически в app.js -->
+    </div>
 
     <!-- ═══════════════════════════════════════
          3. Календарная лента дней недели (Пн, Вт, Ср...)
     ═══════════════════════════════════════ -->
     <div class="space-y-1">
-      <div id="days-ribbon" class="flex gap-1.5 overflow-x-auto no-scrollbar py-1">
+      <div id="days-ribbon" class="flex gap-2 overflow-x-auto no-scrollbar py-1">
         <!-- Дни генерируются динамически -->
       </div>
     </div>
@@ -113,35 +134,35 @@
     <!-- ═══════════════════════════════════════
          4. Список пар на выбранный день
     ═══════════════════════════════════════ -->
-    <div id="day-schedule-content" class="space-y-2 pt-1">
+    <div id="day-schedule-content" class="space-y-3 pt-1">
       <div class="text-center py-20 text-slate-400 text-sm">
         Выбери группу или преподавателя ☝️
       </div>
     </div>
 
     <!-- Индикатор загрузки -->
-    <div id="schedule-loader" class="hidden py-16 text-center text-xs text-slate-400 font-semibold tracking-wider uppercase space-y-2">
-      <div class="w-6 h-6 border-2 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin mx-auto"></div>
-      <p>Загрузка пар...</p>
+    <div id="schedule-loader" class="hidden py-16 text-center text-xs text-slate-400 font-semibold tracking-wider uppercase space-y-3">
+      <div class="w-8 h-8 border-2 border-violet-500/30 border-t-cyan-400 rounded-full animate-spin mx-auto shadow-lg shadow-cyan-500/20"></div>
+      <p>Загрузка расписания...</p>
     </div>
 
   </div>
 
   <!-- ═══════════════════════════════════════
-       Модалка настройки времени звонков
+       Модалка настройки времени звонков (Glass)
   ═══════════════════════════════════════ -->
-  <div id="bell-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-    <div class="modal-card w-full max-w-sm p-5 space-y-4 shadow-2xl rounded-2xl">
-      <div class="flex items-center justify-between border-b border-slate-200/50 dark:border-slate-800 pb-3">
+  <div id="bell-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-black/70 backdrop-blur-md">
+    <div class="modal-card w-full max-w-sm p-5 space-y-4 shadow-2xl rounded-3xl border border-white/20">
+      <div class="flex items-center justify-between border-b border-white/10 pb-3">
         <div class="flex items-center gap-2">
-          <i data-lucide="clock" class="w-5 h-5 text-indigo-500"></i>
-          <h3 class="font-bold text-sm text-slate-900 dark:text-white">Время звонков</h3>
+          <i data-lucide="clock" class="w-5 h-5 text-cyan-400"></i>
+          <h3 class="font-display font-bold text-sm text-white">Время звонков</h3>
         </div>
-        <button onclick="closeBellSettings()" class="text-slate-400 hover:text-slate-200 text-lg leading-none">&times;</button>
+        <button onclick="closeBellSettings()" class="text-slate-400 hover:text-white text-xl leading-none">&times;</button>
       </div>
 
-      <p class="text-xs text-slate-400 leading-relaxed">
-        Укажи время пар для твоего колледжа. Таймер автоматически пересчитается!
+      <p class="text-xs text-slate-300 leading-relaxed">
+        Укажи время звонков для твоего колледжа. Таймер пар автоматически пересчитается!
       </p>
 
       <div id="bell-inputs" class="space-y-2 max-h-60 overflow-y-auto pr-1 no-scrollbar">
@@ -149,16 +170,16 @@
       </div>
 
       <div class="flex gap-2 pt-2">
-        <button onclick="resetDefaultBells()" class="flex-1 py-2 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-semibold text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+        <button onclick="resetDefaultBells()" class="flex-1 py-2.5 rounded-2xl border border-white/15 text-xs font-semibold text-slate-300 hover:bg-white/5 transition">
           Сброс
         </button>
-        <button onclick="saveBellSettings()" class="flex-1 py-2 rounded-xl bg-indigo-500 hover:bg-indigo-600 text-white text-xs font-bold transition">
+        <button onclick="saveBellSettings()" class="flex-1 py-2.5 rounded-2xl bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white text-xs font-bold shadow-lg shadow-indigo-500/30 transition">
           Сохранить
         </button>
       </div>
     </div>
   </div>
 
-  <script src="app.js?v=3"></script>
+  <script src="app.js?v=4"></script>
 </body>
 </html>

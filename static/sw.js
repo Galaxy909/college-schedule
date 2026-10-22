@@ -4,12 +4,12 @@
  * а при отсутствии сети сайт загружается из кэша.
  */
 
-const CACHE_NAME = "schedule-v3";
+const CACHE_NAME = "schedule-v4";
 const STATIC_ASSETS = [
   "/static/index.html",
-  "/static/style.css?v=3",
-  "/static/app.js?v=3",
-  "/static/manifest.json?v=3",
+  "/static/style.css?v=4",
+  "/static/app.js?v=4",
+  "/static/manifest.json?v=4",
   "/static/icon-192.png",
   "/static/icon-512.png",
 ];

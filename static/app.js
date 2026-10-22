@@ -1,9 +1,7 @@
 /**
- * app.js — Логика расписания с поддержкой Групп и Преподавателей:
- * - Переключение между режимами «Группы» и «Преподаватели»
- * - Закрепление преподавателей (звёздочка ⭐ и быстрые чипы под шапкой)
- * - Точный дизайн карточек пар по референсу со скриншота
- * - Живой таймер пар с подсчетом минут и секунд
+ * app.js — Liquid Glass & visionOS (Жидкое стекло Apple)
+ * Полноценная поддержка Групп и Преподавателей, неоновый прогресс-бар,
+ * стеклянные карточки и живой статус.
  */
 
 const state = {
@@ -17,7 +15,7 @@ const state = {
   selectedDayIndex: 0,
 };
 
-// Реальное расписание звонков колледжа (как на скриншоте)
+// Реальное расписание звонков колледжа
 const DEFAULT_BELLS = [
   { num: 1, startStr: "08:15", endStr: "09:50" },
   { num: 2, startStr: "10:00", endStr: "11:35" },
@@ -54,7 +52,7 @@ function cleanString(str) {
   return str.replace(/\r?\n|\r/g, " ").replace(/\s+/g, " ").trim();
 }
 
-// PWA Service Worker
+// PWA Service Worker (версия 4)
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("/static/sw.js").then((reg) => {
     reg.update();
@@ -90,12 +88,12 @@ function initModeUI() {
   const chipsContainer = document.getElementById("pinned-chips-container");
 
   if (isTeacher) {
-    groupBtn.className = "px-3 py-1.5 rounded-lg transition-all text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white";
-    teacherBtn.className = "px-3 py-1.5 rounded-lg transition-all font-bold text-white bg-indigo-500 shadow-sm";
+    groupBtn.className = "px-4 py-1.5 rounded-xl text-slate-400 hover:text-white transition-all";
+    teacherBtn.className = "px-4 py-1.5 rounded-xl font-bold text-white bg-gradient-to-r from-violet-600 to-indigo-600 shadow-lg shadow-indigo-500/30 transition-all";
     if (chipsContainer) chipsContainer.classList.remove("hidden");
   } else {
-    groupBtn.className = "px-3 py-1.5 rounded-lg transition-all font-bold text-white bg-indigo-500 shadow-sm";
-    teacherBtn.className = "px-3 py-1.5 rounded-lg transition-all text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white";
+    groupBtn.className = "px-4 py-1.5 rounded-xl font-bold text-white bg-gradient-to-r from-violet-600 to-indigo-600 shadow-lg shadow-indigo-500/30 transition-all";
+    teacherBtn.className = "px-4 py-1.5 rounded-xl text-slate-400 hover:text-white transition-all";
     if (chipsContainer) chipsContainer.classList.add("hidden");
   }
 }
@@ -107,7 +105,6 @@ function switchMode(newMode) {
   initModeUI();
   renderPinnedChips();
 
-  // Закрываем меню если открыто
   document.getElementById("selector-dropdown-menu")?.classList.add("hidden");
   document.getElementById("selector-arrow")?.classList.remove("rotate-180");
 
@@ -164,7 +161,7 @@ async function loadData() {
 }
 
 // ─────────────────────────────────────────────
-// 3. Выпадающее меню выбора (Группы / Преподаватели)
+// 3. Выпадающее меню выбора
 // ─────────────────────────────────────────────
 function toggleSelectorDropdown() {
   const menu = document.getElementById("selector-dropdown-menu");
@@ -177,7 +174,7 @@ function toggleSelectorDropdown() {
     const input = document.getElementById("selector-dropdown-search");
     if (input) {
       input.value = "";
-      input.placeholder = state.currentMode === "teacher" ? "Поиск преподавателя (напр. Арсланова)..." : "Поиск группы (напр. 911)...";
+      input.placeholder = state.currentMode === "teacher" ? "Поиск преподавателя..." : "Поиск группы...";
       renderDropdownItems();
       input.focus();
     }
@@ -198,24 +195,23 @@ function renderDropdownItems() {
   container.innerHTML = "";
 
   if (state.currentMode === "group") {
-    // Режим Групп
     const filtered = state.allGroups.filter((g) => g.name.toLowerCase().includes(q));
     if (filtered.length === 0) {
-      container.innerHTML = `<div class="p-3 text-xs text-slate-400 text-center">Группы не найдены</div>`;
+      container.innerHTML = `<div class="p-4 text-xs text-slate-400 text-center">Группы не найдены</div>`;
       return;
     }
 
     filtered.forEach((g) => {
       const item = document.createElement("button");
       const isSelected = g.id === state.selectedGroupId;
-      item.className = `w-full text-left px-3 py-2 rounded-xl text-xs font-semibold flex items-center justify-between transition-colors ${
+      item.className = `w-full text-left px-3.5 py-2.5 rounded-2xl text-xs font-semibold flex items-center justify-between transition-all ${
         isSelected
-          ? "bg-indigo-500/10 text-indigo-500 font-bold"
-          : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+          ? "bg-gradient-to-r from-violet-600/30 to-indigo-600/30 text-white font-bold border border-violet-500/40"
+          : "text-slate-300 hover:bg-white/10"
       }`;
       item.innerHTML = `
-        <span>Группа ${g.name}</span>
-        ${isSelected ? `<i data-lucide="check" class="w-3.5 h-3.5 text-indigo-500"></i>` : ""}
+        <span class="font-display text-sm tracking-tight">Группа ${g.name}</span>
+        ${isSelected ? `<i data-lucide="check" class="w-4 h-4 text-cyan-400"></i>` : ""}
       `;
       item.onclick = () => {
         selectGroup(g.id);
@@ -224,14 +220,12 @@ function renderDropdownItems() {
       container.appendChild(item);
     });
   } else {
-    // Режим Преподавателей
     const filtered = state.allTeachers.filter((t) => t.name.toLowerCase().includes(q));
     if (filtered.length === 0) {
-      container.innerHTML = `<div class="p-3 text-xs text-slate-400 text-center">Преподаватели не найдены</div>`;
+      container.innerHTML = `<div class="p-4 text-xs text-slate-400 text-center">Преподаватели не найдены</div>`;
       return;
     }
 
-    // Сначала показываем закрепленных
     const sorted = [...filtered].sort((a, b) => {
       const aPinned = state.pinnedTeachers.includes(a.id) ? 1 : 0;
       const bPinned = state.pinnedTeachers.includes(b.id) ? 1 : 0;
@@ -243,22 +237,22 @@ function renderDropdownItems() {
       const isSelected = t.id === state.selectedTeacherId;
       const isPinned = state.pinnedTeachers.includes(t.id);
 
-      item.className = `w-full px-2.5 py-1.5 rounded-xl text-xs font-semibold flex items-center justify-between transition-colors cursor-pointer ${
+      item.className = `w-full px-3 py-2 rounded-2xl text-xs font-semibold flex items-center justify-between transition-all cursor-pointer ${
         isSelected
-          ? "bg-indigo-500/10 text-indigo-500 font-bold"
-          : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+          ? "bg-gradient-to-r from-violet-600/30 to-indigo-600/30 text-white font-bold border border-violet-500/40"
+          : "text-slate-300 hover:bg-white/10"
       }`;
 
       item.innerHTML = `
         <div class="flex-1 truncate pr-2" onclick="handleTeacherClick('${t.id}')">
-          <span>${t.name}</span>
+          <span class="font-display text-sm tracking-tight">${t.name}</span>
         </div>
-        <div class="flex items-center gap-1">
+        <div class="flex items-center gap-1.5">
           <button onclick="handlePinToggle('${t.id}', event)" title="${isPinned ? 'Открепить' : 'Закрепить'}"
             class="star-btn ${isPinned ? 'pinned' : ''}">
             <i data-lucide="star" class="w-4 h-4 ${isPinned ? 'fill-amber-400 text-amber-400' : 'text-slate-400'}"></i>
           </button>
-          ${isSelected ? `<i data-lucide="check" class="w-3.5 h-3.5 text-indigo-500"></i>` : ""}
+          ${isSelected ? `<i data-lucide="check" class="w-4 h-4 text-cyan-400"></i>` : ""}
         </div>
       `;
 
@@ -315,8 +309,8 @@ function renderPinnedChips() {
     const btn = document.createElement("button");
     btn.className = `chip-btn ${isActive ? "active" : ""}`;
     btn.innerHTML = `
-      <i data-lucide="star" class="w-3 h-3 ${isActive ? 'fill-white text-white' : 'fill-amber-400 text-amber-400'}"></i>
-      <span>${teacher.name}</span>
+      <i data-lucide="star" class="w-3.5 h-3.5 ${isActive ? 'fill-white text-white' : 'fill-amber-400 text-amber-400'}"></i>
+      <span class="font-display tracking-tight">${teacher.name}</span>
     `;
     btn.onclick = () => selectTeacher(id);
     list.appendChild(btn);
@@ -326,7 +320,7 @@ function renderPinnedChips() {
 }
 
 // ─────────────────────────────────────────────
-// 5. Выбор Группы / Преподавателя и загрузка расписания
+// 5. Выбор Группы / Преподавателя
 // ─────────────────────────────────────────────
 async function selectGroup(groupId) {
   state.selectedGroupId = groupId;
@@ -334,8 +328,13 @@ async function selectGroup(groupId) {
 
   const group = state.allGroups.find((g) => g.id === groupId);
   const nameEl = document.getElementById("selected-item-name");
-  if (nameEl && group) {
-    nameEl.textContent = `Группа ${group.name}`;
+  const subEl = document.getElementById("selected-item-sub");
+  const avatarEl = document.getElementById("selector-avatar");
+
+  if (group) {
+    if (nameEl) nameEl.textContent = `Группа ${group.name}`;
+    if (subEl) subEl.textContent = "Студенческая группа";
+    if (avatarEl) avatarEl.textContent = group.name.slice(0, 3);
   }
 
   showLoader(true);
@@ -350,7 +349,7 @@ async function selectGroup(groupId) {
   } catch (err) {
     console.error(err);
     document.getElementById("day-schedule-content").innerHTML =
-      `<div class="p-4 text-center text-xs text-red-400">Ошибка при получении расписания</div>`;
+      `<div class="p-6 text-center text-xs text-red-400">Ошибка при получении расписания</div>`;
   } finally {
     showLoader(false);
   }
@@ -363,8 +362,13 @@ async function selectTeacher(teacherId) {
 
   const teacher = state.allTeachers.find((t) => t.id === teacherId);
   const nameEl = document.getElementById("selected-item-name");
-  if (nameEl && teacher) {
-    nameEl.textContent = teacher.name;
+  const subEl = document.getElementById("selected-item-sub");
+  const avatarEl = document.getElementById("selector-avatar");
+
+  if (teacher) {
+    if (nameEl) nameEl.textContent = teacher.name;
+    if (subEl) subEl.textContent = "Преподаватель колледжа";
+    if (avatarEl) avatarEl.textContent = "👤";
   }
 
   showLoader(true);
@@ -379,7 +383,7 @@ async function selectTeacher(teacherId) {
   } catch (err) {
     console.error(err);
     document.getElementById("day-schedule-content").innerHTML =
-      `<div class="p-4 text-center text-xs text-red-400">Ошибка при получении расписания</div>`;
+      `<div class="p-6 text-center text-xs text-red-400">Ошибка при получении расписания</div>`;
   } finally {
     showLoader(false);
   }
@@ -398,7 +402,7 @@ function detectInitialDay() {
 }
 
 // ─────────────────────────────────────────────
-// 6. Календарная лента дней недели (Пн, Вт, Ср...)
+// 6. Календарная лента дней недели (visionOS)
 // ─────────────────────────────────────────────
 function renderDaysRibbon() {
   const ribbon = document.getElementById("days-ribbon");
@@ -416,9 +420,9 @@ function renderDaysRibbon() {
     const isActive = idx === state.selectedDayIndex;
     pill.className = `day-pill ${isActive ? "active" : ""}`;
     pill.innerHTML = `
-      <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400">${weekday}</span>
-      <span class="text-sm font-extrabold text-slate-800 dark:text-slate-100">${dayNumber}</span>
-      <span class="w-1 h-1 rounded-full ${day.lessons.length > 0 ? "bg-indigo-400" : "bg-transparent"} mt-0.5"></span>
+      <span class="text-[10px] uppercase font-bold text-slate-400">${weekday}</span>
+      <span class="font-display text-base font-bold text-white">${dayNumber}</span>
+      <span class="w-1.5 h-1.5 rounded-full ${day.lessons.length > 0 ? (isActive ? "bg-cyan-300" : "bg-cyan-400/80") : "bg-transparent"} mt-0.5"></span>
     `;
 
     pill.onclick = () => {
@@ -432,7 +436,7 @@ function renderDaysRibbon() {
 }
 
 // ─────────────────────────────────────────────
-// 7. Список пар: Точный дизайн карточек по референсу
+// 7. Карточки пар (Liquid Glass)
 // ─────────────────────────────────────────────
 function renderDaySchedule() {
   updateLiveStatusBar();
@@ -458,7 +462,7 @@ function renderDaySchedule() {
 
   const pairNumbers = Array.from(pairsMap.keys()).sort((a, b) => a - b);
   const list = document.createElement("div");
-  list.className = "space-y-3";
+  list.className = "space-y-3.5";
 
   pairNumbers.forEach((num) => {
     const pairLessons = pairsMap.get(num);
@@ -468,13 +472,10 @@ function renderDaySchedule() {
     const endStr = bell ? bell.endStr : "";
 
     const card = document.createElement("div");
-    card.className = "lesson-card";
+    card.className = "liquid-card p-4";
 
     if (state.currentMode === "teacher") {
-      // ═════════════════════════════════════════════
-      // РЕЖИМ ПРЕПОДАВАТЕЛЯ: 3-колоночный стиль
-      // [Время начала/конца] | [Предмет и Группа] | [Кабинет и Номер пары]
-      // ═════════════════════════════════════════════
+      // Режим преподавателя: 3 колонки
       const lesson = pairLessons[0];
       const subj = cleanString(lesson.subject);
       const group = cleanString(lesson.group);
@@ -482,33 +483,28 @@ function renderDaySchedule() {
 
       card.innerHTML = `
         <div class="flex items-center justify-between gap-3">
-          <!-- Колонка 1: Время (друг под другом) -->
-          <div class="flex flex-col flex-shrink-0 text-left min-w-[50px]">
-            <span class="text-sm sm:text-base font-bold text-slate-900 dark:text-white leading-tight">${startStr || "—"}</span>
-            <span class="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400 leading-tight mt-0.5">${endStr}</span>
+          <div class="flex flex-col flex-shrink-0 text-left min-w-[55px]">
+            <span class="font-display text-sm font-bold text-white leading-tight">${startStr || "—"}</span>
+            <span class="text-xs text-slate-400 leading-tight mt-0.5">${endStr}</span>
           </div>
 
-          <!-- Колонка 2: Предмет и Группа (по центру) -->
-          <div class="flex-1 min-w-0 px-1 text-left">
-            <div class="font-bold text-sm sm:text-base text-slate-900 dark:text-white leading-snug line-clamp-2">${subj}</div>
-            ${group ? `<div class="text-xs sm:text-sm font-semibold text-sky-500 dark:text-sky-400 truncate mt-0.5">Группа ${group}</div>` : ""}
+          <div class="flex-1 min-w-0 px-2 text-left">
+            <div class="font-display text-base font-bold text-white leading-snug truncate">${subj}</div>
+            ${group ? `<div class="text-xs font-semibold text-cyan-300 truncate mt-0.5">Группа ${group}</div>` : ""}
           </div>
 
-          <!-- Колонка 3: Кабинет и Пара (справа) -->
-          <div class="flex flex-col flex-shrink-0 text-right min-w-[52px]">
-            <span class="text-sm sm:text-base font-bold text-slate-900 dark:text-white leading-tight">${room || "—"}</span>
-            <span class="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400 leading-tight mt-0.5">${num} пара</span>
+          <div class="flex flex-col flex-shrink-0 text-right min-w-[55px]">
+            <span class="font-display text-sm font-bold text-cyan-300 leading-tight bg-cyan-500/10 px-2.5 py-0.5 rounded-lg border border-cyan-500/25 text-center">${room || "—"}</span>
+            <span class="text-xs text-slate-400 leading-tight mt-1 text-center font-medium">${num} пара</span>
           </div>
         </div>
       `;
     } else {
-      // ═════════════════════════════════════════════
-      // РЕЖИМ ГРУППЫ: разделение по подгруппам или компактный вид
-      // ═════════════════════════════════════════════
+      // Режим группы: разделение по подгруппам или общая пара
       const isSplit = pairLessons.length > 1 || pairLessons.some((l) => l.subgroup > 0);
 
       if (!isSplit) {
-        // Случай 1: Общая пара для всей группы (3 колонки)
+        // Общая пара (3 колонки)
         const lesson = pairLessons[0];
         const subj = cleanString(lesson.subject);
         const teacher = cleanString(lesson.teacher);
@@ -516,24 +512,24 @@ function renderDaySchedule() {
 
         card.innerHTML = `
           <div class="flex items-center justify-between gap-3">
-            <div class="flex flex-col flex-shrink-0 text-left min-w-[50px]">
-              <span class="text-sm sm:text-base font-bold text-slate-900 dark:text-white leading-tight">${startStr || "—"}</span>
-              <span class="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400 leading-tight mt-0.5">${endStr}</span>
+            <div class="flex flex-col flex-shrink-0 text-left min-w-[55px]">
+              <span class="font-display text-sm font-bold text-white leading-tight">${startStr || "—"}</span>
+              <span class="text-xs text-slate-400 leading-tight mt-0.5">${endStr}</span>
             </div>
 
-            <div class="flex-1 min-w-0 px-1 text-left">
-              <div class="font-bold text-sm sm:text-base text-slate-900 dark:text-white leading-snug line-clamp-2">${subj}</div>
-              ${teacher ? `<div class="text-xs sm:text-sm font-normal text-slate-500 dark:text-slate-400 truncate mt-0.5">${teacher}</div>` : ""}
+            <div class="flex-1 min-w-0 px-2 text-left">
+              <div class="font-display text-base font-bold text-white leading-snug truncate">${subj}</div>
+              ${teacher ? `<div class="text-xs text-slate-400 truncate mt-0.5 font-medium">${teacher}</div>` : ""}
             </div>
 
-            <div class="flex flex-col flex-shrink-0 text-right min-w-[52px]">
-              <span class="text-sm sm:text-base font-bold text-slate-900 dark:text-white leading-tight">${room || "—"}</span>
-              <span class="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400 leading-tight mt-0.5">${num} пара</span>
+            <div class="flex flex-col flex-shrink-0 text-right min-w-[55px]">
+              <span class="font-display text-sm font-bold text-cyan-300 leading-tight bg-cyan-500/10 px-2.5 py-0.5 rounded-lg border border-cyan-500/25 text-center">${room || "—"}</span>
+              <span class="text-xs text-slate-400 leading-tight mt-1 text-center font-medium">${num} пара</span>
             </div>
           </div>
         `;
       } else {
-        // Случай 2: Пара с подгруппами (друг под другом)
+        // Пара с разделением на подгруппы
         const sortedLessons = [...pairLessons].sort((a, b) => a.subgroup - b.subgroup);
 
         let subgroupsHTML = "";
@@ -541,30 +537,38 @@ function renderDaySchedule() {
           const subj = cleanString(l.subject);
           const teacher = cleanString(l.teacher);
           const room = cleanString(l.room);
+          const isSub1 = l.subgroup === 1;
           const subTitle = l.subgroup > 0 ? `${l.subgroup}-я подгруппа` : "Вся группа";
+          
+          const badgeClass = isSub1 
+            ? "text-cyan-400 bg-cyan-500/10 border-cyan-500/20" 
+            : "text-violet-400 bg-violet-500/10 border-violet-500/20";
+
           const divider = index > 0 ? `<div class="card-divider"></div>` : "";
 
           subgroupsHTML += `
             ${divider}
-            <div class="space-y-0.5 text-left">
-              <div class="flex items-center justify-between text-xs sm:text-sm">
-                <span class="subgroup-label font-semibold">${subTitle}</span>
-                <span class="font-bold text-slate-900 dark:text-white text-sm sm:text-base">${room}</span>
+            <div class="space-y-1 text-left">
+              <div class="flex items-center justify-between text-xs">
+                <span class="${badgeClass} font-semibold text-[11px] px-2.5 py-0.5 rounded-full border">${subTitle}</span>
+                <span class="font-display font-bold text-sm text-white bg-white/10 px-2.5 py-0.5 rounded-lg border border-white/10">${room}</span>
               </div>
-              <div class="font-bold text-base sm:text-lg text-slate-900 dark:text-white leading-snug pt-0.5">${subj}</div>
-              ${teacher ? `<div class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-normal pt-0.5">${teacher}</div>` : ""}
+              <div class="font-display text-base font-bold text-white pt-0.5 leading-snug">${subj}</div>
+              ${teacher ? `<div class="text-xs text-slate-400 font-medium">${teacher}</div>` : ""}
             </div>
           `;
         });
 
         card.innerHTML = `
-          <div class="flex items-center justify-between">
-            <span class="text-sm sm:text-base font-bold text-slate-900 dark:text-white tracking-tight">${timeStr}</span>
-            <span class="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400">${num}-я пара</span>
-          </div>
+          <div class="space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="font-display text-sm font-bold text-white tracking-wide">${timeStr}</span>
+              <span class="text-xs text-slate-300 px-2.5 py-0.5 rounded-full bg-white/5 border border-white/10">${num}-я пара</span>
+            </div>
 
-          <div class="card-divider"></div>
-          ${subgroupsHTML}
+            <div class="card-divider"></div>
+            ${subgroupsHTML}
+          </div>
         `;
       }
     }
@@ -573,7 +577,7 @@ function renderDaySchedule() {
   });
 
   const header = document.createElement("div");
-  header.className = "flex items-center justify-between text-xs font-bold text-slate-500 dark:text-slate-400 px-1 pt-1 pb-1";
+  header.className = "flex items-center justify-between text-xs font-bold text-slate-400 px-1 pt-1 pb-1";
   header.innerHTML = `
     <span>${currentDay.day_info}</span>
     <span>${pairNumbers.length} пар</span>
@@ -582,9 +586,9 @@ function renderDaySchedule() {
 
   if (pairNumbers.length === 0) {
     const empty = document.createElement("div");
-    empty.className = "py-12 text-center text-xs text-slate-400 space-y-1";
+    empty.className = "py-14 text-center text-xs text-slate-400 space-y-1.5";
     empty.innerHTML = `
-      <p class="text-base font-bold text-slate-600 dark:text-slate-300">Пар нет 🎉</p>
+      <p class="font-display text-lg font-bold text-slate-200">Пар нет 🎉</p>
       <p>На этот день занятий не запланировано</p>
     `;
     container.appendChild(empty);
@@ -596,7 +600,7 @@ function renderDaySchedule() {
 }
 
 // ─────────────────────────────────────────────
-// 8. Компактная статусная строка (Текущая пара)
+// 8. visionOS Hero Виджет (Живой таймер текущей пары)
 // ─────────────────────────────────────────────
 function startLiveTimer() {
   updateLiveStatusBar();
@@ -631,6 +635,7 @@ function updateLiveStatusBar() {
   let isBreak = false;
   let secondsRemaining = 0;
   let activePairNum = null;
+  let activeBell = null;
 
   for (const bell of BELL_SCHEDULE) {
     const matching = todayData.lessons.filter((l) => l.number === bell.num);
@@ -639,6 +644,7 @@ function updateLiveStatusBar() {
     if (currentMinutes >= bell.start && currentMinutes < bell.end) {
       currentLessons = matching;
       activePairNum = bell.num;
+      activeBell = bell;
       const endSec = bell.end * 60;
       const nowSec = currentMinutes * 60 + currentSeconds;
       secondsRemaining = Math.max(0, endSec - nowSec);
@@ -648,6 +654,7 @@ function updateLiveStatusBar() {
     if (currentMinutes < bell.start && currentMinutes >= bell.start - 30) {
       nextLessons = matching;
       activePairNum = bell.num;
+      activeBell = bell;
       isBreak = true;
       const startSec = bell.start * 60;
       const nowSec = currentMinutes * 60 + currentSeconds;
@@ -658,62 +665,106 @@ function updateLiveStatusBar() {
 
   const isTeacher = state.currentMode === "teacher";
 
-  if (currentLessons.length > 0) {
+  if (currentLessons.length > 0 && activeBell) {
     bar.classList.remove("hidden");
-    bar.className = "px-3 py-2 rounded-xl text-xs font-medium flex items-center justify-between border bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400";
     const mins = Math.floor(secondsRemaining / 60);
     const secs = secondsRemaining % 60;
 
-    let textDesc = "";
+    const totalSeconds = (activeBell.end - activeBell.start) * 60;
+    const elapsedSeconds = totalSeconds - secondsRemaining;
+    const progressPercent = Math.min(100, Math.max(0, (elapsedSeconds / totalSeconds) * 100));
+
+    let subjectTitle = "";
+    let roomTitle = "";
+    let personOrGroup = "";
+
     if (isTeacher) {
       const l = currentLessons[0];
-      textDesc = `${cleanString(l.subject)} (каб. ${cleanString(l.room) || '—'}${l.group ? `, Гр. ${cleanString(l.group)}` : ''})`;
+      subjectTitle = cleanString(l.subject);
+      roomTitle = cleanString(l.room) || "—";
+      personOrGroup = l.group ? `Группа ${cleanString(l.group)}` : "";
     } else {
       if (currentLessons.length === 1) {
         const l = currentLessons[0];
-        textDesc = `${cleanString(l.subject)} ${l.room ? `(${cleanString(l.room)})` : ""}`;
+        subjectTitle = cleanString(l.subject);
+        roomTitle = cleanString(l.room) || "—";
+        personOrGroup = cleanString(l.teacher);
       } else {
-        textDesc = currentLessons.map((l) => `${l.subgroup} п/г: ${cleanString(l.subject)}`).join(" | ");
+        subjectTitle = currentLessons.map((l) => `${l.subgroup} п/г: ${cleanString(l.subject)}`).join(" | ");
+        roomTitle = currentLessons.map((l) => cleanString(l.room)).filter(Boolean).join(" / ") || "—";
+        personOrGroup = currentLessons.map((l) => cleanString(l.teacher)).filter(Boolean).join(" | ");
       }
     }
 
     bar.innerHTML = `
-      <div class="flex items-center gap-1.5 truncate">
-        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-        <span class="font-bold">Идёт ${activePairNum} пара:</span>
-        <span class="truncate">${textDesc}</span>
+      <div class="flex items-center justify-between text-xs">
+        <div class="flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+          <span class="font-bold text-emerald-400 uppercase tracking-wider text-[11px]">Идёт ${activePairNum} пара</span>
+        </div>
+        <span class="font-display font-bold text-xs text-white bg-white/10 px-3 py-1 rounded-full border border-white/10">
+          Осталось ${mins}м ${secs < 10 ? "0" : ""}${secs}с
+        </span>
       </div>
-      <span class="font-mono font-bold whitespace-nowrap pl-2">${mins}м ${secs < 10 ? "0" : ""}${secs}с</span>
+
+      <div class="flex items-center justify-between gap-3 pt-0.5">
+        <div class="space-y-0.5 min-w-0 flex-1">
+          <h2 class="font-display text-lg font-bold text-white tracking-tight leading-tight truncate">
+            ${subjectTitle}
+          </h2>
+          ${personOrGroup ? `<div class="text-xs text-slate-300 truncate">${personOrGroup}</div>` : ""}
+        </div>
+
+        <div class="flex flex-col items-center justify-center px-3.5 py-2 rounded-2xl bg-white/5 border border-white/15 flex-shrink-0">
+          <span class="text-[9px] text-slate-400 uppercase tracking-widest font-semibold">Кабинет</span>
+          <span class="font-display text-lg font-bold text-cyan-300">${roomTitle}</span>
+        </div>
+      </div>
+
+      <!-- Неоновый градиентный прогресс-бар -->
+      <div class="space-y-1.5 pt-1">
+        <div class="w-full h-2 bg-slate-900/60 rounded-full overflow-hidden border border-white/10 p-0.5">
+          <div class="h-full bg-gradient-to-r from-violet-500 via-indigo-400 to-cyan-400 rounded-full shadow-lg shadow-cyan-500/50 transition-all duration-1000" style="width: ${progressPercent.toFixed(1)}%;"></div>
+        </div>
+        <div class="flex justify-between text-[10px] text-slate-400 font-medium font-display">
+          <span>${activeBell.startStr}</span>
+          <span class="text-cyan-300 font-semibold">${Math.round(progressPercent)}% пройдено</span>
+          <span>${activeBell.endStr}</span>
+        </div>
+      </div>
     `;
-  } else if (isBreak && nextLessons.length > 0) {
+  } else if (isBreak && nextLessons.length > 0 && activeBell) {
     bar.classList.remove("hidden");
-    bar.className = "px-3 py-2 rounded-xl text-xs font-medium flex items-center justify-between border bg-amber-500/10 border-amber-500/30 text-amber-600 dark:text-amber-400";
     const mins = Math.floor(secondsRemaining / 60);
     const secs = secondsRemaining % 60;
 
-    let textDesc = "";
+    let nextTitle = "";
     if (isTeacher) {
-      const l = nextLessons[0];
-      textDesc = `${cleanString(l.subject)}${l.group ? ` (Гр. ${cleanString(l.group)})` : ''}`;
+      nextTitle = `${cleanString(nextLessons[0].subject)}${nextLessons[0].group ? ` (Гр. ${cleanString(nextLessons[0].group)})` : ""}`;
     } else {
-      if (nextLessons.length === 1) {
-        textDesc = cleanString(nextLessons[0].subject);
-      } else {
-        textDesc = nextLessons.map((l) => `${l.subgroup} п/г: ${cleanString(l.subject)}`).join(" | ");
-      }
+      nextTitle = nextLessons.map((l) => cleanString(l.subject)).join(" | ");
     }
 
     bar.innerHTML = `
-      <div class="flex items-center gap-1.5 truncate">
-        <span class="w-2 h-2 rounded-full bg-amber-500"></span>
-        <span class="font-bold">Перемена:</span>
-        <span class="truncate">скоро ${activePairNum} пара (${textDesc})</span>
+      <div class="flex items-center justify-between text-xs">
+        <div class="flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+          <span class="font-bold text-amber-400 uppercase tracking-wider text-[11px]">Перемена</span>
+        </div>
+        <span class="font-display font-bold text-xs text-white bg-white/10 px-3 py-1 rounded-full border border-white/10">
+          До звонка ${mins}м ${secs < 10 ? "0" : ""}${secs}с
+        </span>
       </div>
-      <span class="font-mono font-bold whitespace-nowrap pl-2">до пары ${mins}м ${secs < 10 ? "0" : ""}${secs}с</span>
+
+      <div class="pt-0.5">
+        <div class="text-xs text-slate-300">Скоро <span class="font-bold text-white">${activePairNum} пара:</span> ${nextTitle}</div>
+      </div>
     `;
   } else {
     bar.classList.add("hidden");
   }
+
+  if (window.lucide) lucide.createIcons();
 }
 
 // ─────────────────────────────────────────────
@@ -753,15 +804,15 @@ function openBellSettings() {
 
   BELL_SCHEDULE.forEach((b) => {
     const row = document.createElement("div");
-    row.className = "flex items-center justify-between gap-2 p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs";
+    row.className = "flex items-center justify-between gap-2 p-2.5 rounded-2xl bg-white/5 border border-white/10 text-xs";
     row.innerHTML = `
-      <span class="font-bold text-slate-700 dark:text-slate-300 w-14">№${b.num} пара</span>
-      <div class="flex items-center gap-1.5 flex-1 justify-end">
+      <span class="font-display font-bold text-white w-14">№${b.num} пара</span>
+      <div class="flex items-center gap-1.5 flex-1 justify-end font-mono">
         <input type="time" id="bell-start-${b.num}" value="${b.startStr}"
-          class="px-2 py-1 rounded-lg bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 font-mono text-center focus:outline-none" />
+          class="px-2.5 py-1.5 rounded-xl bg-white/10 border border-white/15 text-white font-mono text-center focus:outline-none focus:border-cyan-400" />
         <span class="text-slate-400">–</span>
         <input type="time" id="bell-end-${b.num}" value="${b.endStr}"
-          class="px-2 py-1 rounded-lg bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 font-mono text-center focus:outline-none" />
+          class="px-2.5 py-1.5 rounded-xl bg-white/10 border border-white/15 text-white font-mono text-center focus:outline-none focus:border-cyan-400" />
       </div>
     `;
     container.appendChild(row);
