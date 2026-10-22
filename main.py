@@ -90,6 +90,37 @@ def api_groups():
     return groups
 
 
+@app.get("/api/teachers")
+def api_teachers():
+    """
+    Маршрут: GET /api/teachers
+    Возвращает список всех преподавателей колледжа.
+    """
+    cached = get_from_cache("teachers")
+    if cached:
+        return cached
+
+    teachers = schedule_parser.get_teachers()
+    set_cache("teachers", teachers)
+    return teachers
+
+
+@app.get("/api/schedule/teacher/{teacher_id:path}")
+def api_teacher_schedule(teacher_id: str):
+    """
+    Маршрут: GET /api/schedule/teacher/cp23.htm
+    Возвращает расписание конкретного преподавателя на неделю.
+    """
+    cache_key = f"teacher:{teacher_id}"
+    cached = get_from_cache(cache_key)
+    if cached:
+        return cached
+
+    schedule = schedule_parser.get_teacher_schedule(teacher_id)
+    set_cache(cache_key, schedule)
+    return JSONResponse(content=schedule)
+
+
 @app.get("/api/schedule/{group_id:path}")
 def api_schedule(group_id: str):
     """

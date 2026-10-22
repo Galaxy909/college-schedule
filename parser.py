@@ -206,11 +206,143 @@ def get_schedule(group_file: str) -> Dict[str, Any]:
     return {"group": group_file, "updated_at": "", "days": []}
 
 
+def get_teachers() -> List[Dict[str, str]]:
+    """
+    Получить список всех преподавателей колледжа.
+    Кэш на 24 часа (86400 сек).
+    """
+    cached = _read_disk_cache("teachers.json", max_age_seconds=86400)
+    if cached:
+        return cached
+
+    url = f"{BASE_URL}/cp.htm"
+    try:
+        with httpx.Client(timeout=60.0, headers=HEADERS) as client:
+            response = client.get(url)
+            response.encoding = "utf-8"
+            soup = BeautifulSoup(response.text, "html.parser")
+
+            teachers = []
+            links = soup.find_all("a", class_="z0")
+            for link in links:
+                teacher_name = link.text.strip()
+                teacher_file = link.get("href", "").strip()
+                if teacher_name and teacher_file:
+                    teachers.append({
+                        "id": teacher_file,
+                        "name": teacher_name
+                    })
+
+            if teachers:
+                _write_disk_cache("teachers.json", teachers)
+                return teachers
+    except Exception as e:
+        print(f"⚠️ Ошибка при загрузке преподавателей: {e}")
+
+    old_cache = _read_disk_cache("teachers.json", max_age_seconds=99999999)
+    if old_cache:
+        return old_cache
+
+    return []
+
+
+def get_teacher_schedule(teacher_file: str) -> Dict[str, Any]:
+    """
+    Получить расписание преподавателя (например, 'cp23.htm').
+    Кэш на 4 часа (14400 сек).
+    """
+    cache_name = f"schedule_teacher_{teacher_file}.json"
+    cached = _read_disk_cache(cache_name, max_age_seconds=14400)
+    if cached:
+        return cached
+
+    url = f"{BASE_URL}/{teacher_file}"
+    try:
+        with httpx.Client(timeout=60.0, headers=HEADERS) as client:
+            response = client.get(url)
+            response.encoding = "utf-8"
+            soup = BeautifulSoup(response.text, "html.parser")
+
+            h1 = soup.find("h1")
+            teacher_name = h1.text.replace("Преподаватель:", "").strip() if h1 else teacher_file
+
+            ref = soup.find("div", class_="ref")
+            updated_at = ref.text.strip() if ref else ""
+
+            table = soup.find("table", class_="inf")
+            if not table:
+                return {"teacher": teacher_name, "updated_at": updated_at, "days": []}
+
+            days_data = []
+            current_day = None
+
+            for row in table.find_all("tr"):
+                if row.find("td", class_="hd0"):
+                    continue
+                cells = row.find_all("td")
+                if not cells:
+                    continue
+
+                first_cell = cells[0]
+                if first_cell.get("rowspan"):
+                    day_text = first_cell.get_text(separator=" ").strip()
+                    current_day = {
+                        "day_info": day_text,
+                        "lessons": []
+                    }
+                    days_data.append(current_day)
+                    lesson_num_cell = cells[1]
+                    lesson_cells = cells[2:]
+                else:
+                    lesson_num_cell = cells[0]
+                    lesson_cells = cells[1:]
+
+                lesson_num = lesson_num_cell.text.strip()
+                if not lesson_num.isdigit():
+                    continue
+
+                for cell in lesson_cells:
+                    if "nul" in cell.get("class", []):
+                        continue
+                    group_tag = cell.find("a", class_="z1")
+                    room_tag = cell.find("a", class_="z2")
+                    subject_tag = cell.find("a", class_="z3")
+
+                    if subject_tag or group_tag:
+                        group_name = group_tag.text.strip() if group_tag else ""
+                        room_name = room_tag.text.strip() if room_tag else ""
+                        subject_name = subject_tag.text.strip() if subject_tag else ""
+
+                        if current_day:
+                            current_day["lessons"].append({
+                                "number": int(lesson_num),
+                                "subject": subject_name,
+                                "group": group_name,
+                                "room": room_name,
+                            })
+
+            result = {
+                "teacher": teacher_name,
+                "updated_at": updated_at,
+                "days": days_data
+            }
+
+            if days_data:
+                _write_disk_cache(cache_name, result)
+
+            return result
+    except Exception as e:
+        print(f"⚠️ Ошибка при парсинге расписания преподавателя {teacher_file}: {e}")
+        old_cache = _read_disk_cache(cache_name, max_age_seconds=99999999)
+        if old_cache:
+            return old_cache
+
+    return {"teacher": teacher_file, "updated_at": "", "days": []}
+
+
 if __name__ == "__main__":
     print("🚀 Тестируем парсер...")
     groups = get_groups()
     print(f"✅ Найдено групп: {len(groups)}")
-    if groups:
-        print(f"Первая группа: {groups[0]}")
-        sched = get_schedule(groups[0]["id"])
-        print(f"Успешно спарсили расписание: {sched['group']}, дней: {len(sched['days'])}")
+    teachers = get_teachers()
+    print(f"✅ Найдено преподавателей: {len(teachers)}")

@@ -106,6 +106,46 @@ body {
   border: 1px solid var(--border-color);
 }
 
+/* Чипы быстрого доступа к закрепленным преподавателям */
+.chip-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.65rem;
+  border-radius: 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+  border: 1px solid var(--border-color);
+  background-color: var(--card-bg);
+  color: var(--text-secondary);
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.chip-btn:hover {
+  border-color: #6366f1;
+  color: #6366f1;
+}
+
+.chip-btn.active {
+  background-color: #6366f1;
+  border-color: #6366f1;
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.25);
+}
+
+.star-btn {
+  padding: 0.25rem;
+  border-radius: 0.5rem;
+  color: #94a3b8;
+  transition: all 0.15s ease;
+}
+
+.star-btn:hover, .star-btn.pinned {
+  color: #f59e0b;
+}
+
 /* Скрытие скроллбара */
 .no-scrollbar::-webkit-scrollbar {
   display: none;

@@ -1,13 +1,18 @@
 /**
- * app.js — Логика расписания с точным дизайном карточек по референсу:
- * - Подгруппы выводятся друг под другом в одной карточке
- * - Разделители как на скриншоте
- * - Одиночные пары в компактном виде (время слева, предмет по центру, кабинет и пара справа)
+ * app.js — Логика расписания с поддержкой Групп и Преподавателей:
+ * - Переключение между режимами «Группы» и «Преподаватели»
+ * - Закрепление преподавателей (звёздочка ⭐ и быстрые чипы под шапкой)
+ * - Точный дизайн карточек пар по референсу со скриншота
+ * - Живой таймер пар с подсчетом минут и секунд
  */
 
 const state = {
+  currentMode: localStorage.getItem("my_schedule_mode") || "group", // "group" | "teacher"
   allGroups: [],
+  allTeachers: [],
+  pinnedTeachers: JSON.parse(localStorage.getItem("my_pinned_teachers") || "[]"),
   selectedGroupId: localStorage.getItem("my_schedule_group") || null,
+  selectedTeacherId: localStorage.getItem("my_schedule_teacher") || null,
   currentSchedule: null,
   selectedDayIndex: 0,
 };
@@ -58,16 +63,17 @@ if ("serviceWorker" in navigator) {
 
 document.addEventListener("DOMContentLoaded", () => {
   initTheme();
-  loadGroups();
+  initModeUI();
+  loadData();
   startLiveTimer();
 
-  // Закрывать дропдаун групп при клике вне его
+  // Закрывать дропдаун при клике вне его
   document.addEventListener("click", (e) => {
-    const dropdown = document.getElementById("group-dropdown-menu");
-    const btn = document.getElementById("group-dropdown-btn");
+    const dropdown = document.getElementById("selector-dropdown-menu");
+    const btn = document.getElementById("selector-dropdown-btn");
     if (dropdown && !dropdown.contains(e.target) && !btn.contains(e.target)) {
       dropdown.classList.add("hidden");
-      document.getElementById("group-arrow")?.classList.remove("rotate-180");
+      document.getElementById("selector-arrow")?.classList.remove("rotate-180");
     }
   });
 
@@ -75,40 +81,104 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 // ─────────────────────────────────────────────
-// 1. Дропдаун для выбора группы
+// 1. Управление режимами (Группы / Преподаватели)
 // ─────────────────────────────────────────────
-async function loadGroups() {
-  try {
-    const res = await fetch("/api/groups");
-    if (!res.ok) throw new Error("Ошибка загрузки групп");
+function initModeUI() {
+  const isTeacher = state.currentMode === "teacher";
+  const groupBtn = document.getElementById("mode-group-btn");
+  const teacherBtn = document.getElementById("mode-teacher-btn");
+  const chipsContainer = document.getElementById("pinned-chips-container");
 
-    state.allGroups = await res.json();
-    renderDropdownGroups(state.allGroups);
+  if (isTeacher) {
+    groupBtn.className = "px-3 py-1.5 rounded-lg transition-all text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white";
+    teacherBtn.className = "px-3 py-1.5 rounded-lg transition-all font-bold text-white bg-indigo-500 shadow-sm";
+    if (chipsContainer) chipsContainer.classList.remove("hidden");
+  } else {
+    groupBtn.className = "px-3 py-1.5 rounded-lg transition-all font-bold text-white bg-indigo-500 shadow-sm";
+    teacherBtn.className = "px-3 py-1.5 rounded-lg transition-all text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white";
+    if (chipsContainer) chipsContainer.classList.add("hidden");
+  }
+}
 
+function switchMode(newMode) {
+  if (state.currentMode === newMode) return;
+  state.currentMode = newMode;
+  localStorage.setItem("my_schedule_mode", newMode);
+  initModeUI();
+  renderPinnedChips();
+
+  // Закрываем меню если открыто
+  document.getElementById("selector-dropdown-menu")?.classList.add("hidden");
+  document.getElementById("selector-arrow")?.classList.remove("rotate-180");
+
+  if (newMode === "group") {
     if (state.selectedGroupId) {
       selectGroup(state.selectedGroupId);
     } else if (state.allGroups.length > 0) {
       selectGroup(state.allGroups[0].id);
     }
-  } catch (err) {
-    console.error(err);
-    document.getElementById("dropdown-groups-list").innerHTML =
-      `<div class="p-3 text-xs text-red-400">Ошибка загрузки групп</div>`;
+  } else {
+    if (state.selectedTeacherId) {
+      selectTeacher(state.selectedTeacherId);
+    } else if (state.pinnedTeachers.length > 0) {
+      selectTeacher(state.pinnedTeachers[0]);
+    } else if (state.allTeachers.length > 0) {
+      selectTeacher(state.allTeachers[0].id);
+    }
   }
 }
 
-function toggleGroupDropdown() {
-  const menu = document.getElementById("group-dropdown-menu");
-  const arrow = document.getElementById("group-arrow");
+// ─────────────────────────────────────────────
+// 2. Загрузка списков групп и преподавателей
+// ─────────────────────────────────────────────
+async function loadData() {
+  try {
+    const [groupsRes, teachersRes] = await Promise.all([
+      fetch("/api/groups"),
+      fetch("/api/teachers"),
+    ]);
+
+    if (groupsRes.ok) state.allGroups = await groupsRes.json();
+    if (teachersRes.ok) state.allTeachers = await teachersRes.json();
+
+    renderPinnedChips();
+
+    if (state.currentMode === "teacher") {
+      if (state.selectedTeacherId) {
+        selectTeacher(state.selectedTeacherId);
+      } else if (state.pinnedTeachers.length > 0) {
+        selectTeacher(state.pinnedTeachers[0]);
+      } else if (state.allTeachers.length > 0) {
+        selectTeacher(state.allTeachers[0].id);
+      }
+    } else {
+      if (state.selectedGroupId) {
+        selectGroup(state.selectedGroupId);
+      } else if (state.allGroups.length > 0) {
+        selectGroup(state.allGroups[0].id);
+      }
+    }
+  } catch (err) {
+    console.error("Ошибка загрузки данных:", err);
+  }
+}
+
+// ─────────────────────────────────────────────
+// 3. Выпадающее меню выбора (Группы / Преподаватели)
+// ─────────────────────────────────────────────
+function toggleSelectorDropdown() {
+  const menu = document.getElementById("selector-dropdown-menu");
+  const arrow = document.getElementById("selector-arrow");
   const isHidden = menu.classList.contains("hidden");
 
   if (isHidden) {
     menu.classList.remove("hidden");
     arrow?.classList.add("rotate-180");
-    const input = document.getElementById("group-dropdown-search");
+    const input = document.getElementById("selector-dropdown-search");
     if (input) {
       input.value = "";
-      renderDropdownGroups(state.allGroups);
+      input.placeholder = state.currentMode === "teacher" ? "Поиск преподавателя (напр. Арсланова)..." : "Поиск группы (напр. 911)...";
+      renderDropdownItems();
       input.focus();
     }
   } else {
@@ -117,64 +187,192 @@ function toggleGroupDropdown() {
   }
 }
 
-function renderDropdownGroups(groups) {
-  const container = document.getElementById("dropdown-groups-list");
+function filterDropdownItems() {
+  renderDropdownItems();
+}
+
+function renderDropdownItems() {
+  const container = document.getElementById("dropdown-items-list");
+  const searchInput = document.getElementById("selector-dropdown-search");
+  const q = searchInput ? searchInput.value.toLowerCase().trim() : "";
   container.innerHTML = "";
 
-  if (groups.length === 0) {
-    container.innerHTML = `<div class="p-3 text-xs text-slate-400 text-center">Группы не найдены</div>`;
+  if (state.currentMode === "group") {
+    // Режим Групп
+    const filtered = state.allGroups.filter((g) => g.name.toLowerCase().includes(q));
+    if (filtered.length === 0) {
+      container.innerHTML = `<div class="p-3 text-xs text-slate-400 text-center">Группы не найдены</div>`;
+      return;
+    }
+
+    filtered.forEach((g) => {
+      const item = document.createElement("button");
+      const isSelected = g.id === state.selectedGroupId;
+      item.className = `w-full text-left px-3 py-2 rounded-xl text-xs font-semibold flex items-center justify-between transition-colors ${
+        isSelected
+          ? "bg-indigo-500/10 text-indigo-500 font-bold"
+          : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+      }`;
+      item.innerHTML = `
+        <span>Группа ${g.name}</span>
+        ${isSelected ? `<i data-lucide="check" class="w-3.5 h-3.5 text-indigo-500"></i>` : ""}
+      `;
+      item.onclick = () => {
+        selectGroup(g.id);
+        toggleSelectorDropdown();
+      };
+      container.appendChild(item);
+    });
+  } else {
+    // Режим Преподавателей
+    const filtered = state.allTeachers.filter((t) => t.name.toLowerCase().includes(q));
+    if (filtered.length === 0) {
+      container.innerHTML = `<div class="p-3 text-xs text-slate-400 text-center">Преподаватели не найдены</div>`;
+      return;
+    }
+
+    // Сначала показываем закрепленных
+    const sorted = [...filtered].sort((a, b) => {
+      const aPinned = state.pinnedTeachers.includes(a.id) ? 1 : 0;
+      const bPinned = state.pinnedTeachers.includes(b.id) ? 1 : 0;
+      return bPinned - aPinned;
+    });
+
+    sorted.forEach((t) => {
+      const item = document.createElement("div");
+      const isSelected = t.id === state.selectedTeacherId;
+      const isPinned = state.pinnedTeachers.includes(t.id);
+
+      item.className = `w-full px-2.5 py-1.5 rounded-xl text-xs font-semibold flex items-center justify-between transition-colors cursor-pointer ${
+        isSelected
+          ? "bg-indigo-500/10 text-indigo-500 font-bold"
+          : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+      }`;
+
+      item.innerHTML = `
+        <div class="flex-1 truncate pr-2" onclick="handleTeacherClick('${t.id}')">
+          <span>${t.name}</span>
+        </div>
+        <div class="flex items-center gap-1">
+          <button onclick="handlePinToggle('${t.id}', event)" title="${isPinned ? 'Открепить' : 'Закрепить'}"
+            class="star-btn ${isPinned ? 'pinned' : ''}">
+            <i data-lucide="star" class="w-4 h-4 ${isPinned ? 'fill-amber-400 text-amber-400' : 'text-slate-400'}"></i>
+          </button>
+          ${isSelected ? `<i data-lucide="check" class="w-3.5 h-3.5 text-indigo-500"></i>` : ""}
+        </div>
+      `;
+
+      container.appendChild(item);
+    });
+  }
+
+  if (window.lucide) lucide.createIcons();
+}
+
+function handleTeacherClick(teacherId) {
+  selectTeacher(teacherId);
+  toggleSelectorDropdown();
+}
+
+function handlePinToggle(teacherId, event) {
+  event.stopPropagation();
+  togglePinTeacher(teacherId);
+  renderDropdownItems();
+}
+
+// ─────────────────────────────────────────────
+// 4. Закрепление преподавателей (Быстрый доступ)
+// ─────────────────────────────────────────────
+function togglePinTeacher(teacherId) {
+  const index = state.pinnedTeachers.indexOf(teacherId);
+  if (index > -1) {
+    state.pinnedTeachers.splice(index, 1);
+  } else {
+    state.pinnedTeachers.push(teacherId);
+  }
+  localStorage.setItem("my_pinned_teachers", JSON.stringify(state.pinnedTeachers));
+  renderPinnedChips();
+}
+
+function renderPinnedChips() {
+  const container = document.getElementById("pinned-chips-container");
+  const list = document.getElementById("pinned-chips-list");
+  if (!container || !list) return;
+
+  if (state.currentMode !== "teacher" || state.pinnedTeachers.length === 0) {
+    container.classList.add("hidden");
     return;
   }
 
-  groups.forEach((g) => {
-    const item = document.createElement("button");
-    const isSelected = g.id === state.selectedGroupId;
-    item.className = `w-full text-left px-3 py-2 rounded-xl text-xs font-semibold flex items-center justify-between transition-colors ${
-      isSelected
-        ? "bg-indigo-500/10 text-indigo-500 font-bold"
-        : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
-    }`;
-    item.innerHTML = `
-      <span>Группа ${g.name}</span>
-      ${isSelected ? `<i data-lucide="check" class="w-3.5 h-3.5 text-indigo-500"></i>` : ""}
+  container.classList.remove("hidden");
+  list.innerHTML = "";
+
+  state.pinnedTeachers.forEach((id) => {
+    const teacher = state.allTeachers.find((t) => t.id === id);
+    if (!teacher) return;
+
+    const isActive = id === state.selectedTeacherId;
+    const btn = document.createElement("button");
+    btn.className = `chip-btn ${isActive ? "active" : ""}`;
+    btn.innerHTML = `
+      <i data-lucide="star" class="w-3 h-3 ${isActive ? 'fill-white text-white' : 'fill-amber-400 text-amber-400'}"></i>
+      <span>${teacher.name}</span>
     `;
-    item.onclick = () => {
-      selectGroup(g.id);
-      toggleGroupDropdown();
-    };
-    container.appendChild(item);
+    btn.onclick = () => selectTeacher(id);
+    list.appendChild(btn);
   });
 
   if (window.lucide) lucide.createIcons();
 }
 
-function filterDropdownGroups() {
-  const q = document.getElementById("group-dropdown-search").value.toLowerCase().trim();
-  const filtered = state.allGroups.filter((g) => g.name.toLowerCase().includes(q));
-  renderDropdownGroups(filtered);
-}
-
 // ─────────────────────────────────────────────
-// 2. Выбор группы и получение расписания
+// 5. Выбор Группы / Преподавателя и загрузка расписания
 // ─────────────────────────────────────────────
 async function selectGroup(groupId) {
   state.selectedGroupId = groupId;
   localStorage.setItem("my_schedule_group", groupId);
 
   const group = state.allGroups.find((g) => g.id === groupId);
-  const nameEl = document.getElementById("selected-group-name");
+  const nameEl = document.getElementById("selected-item-name");
   if (nameEl && group) {
     nameEl.textContent = `Группа ${group.name}`;
   }
 
   showLoader(true);
-
   try {
     const res = await fetch(`/api/schedule/${groupId}`);
-    if (!res.ok) throw new Error("Не удалось загрузить расписание");
+    if (!res.ok) throw new Error("Не удалось загрузить расписание группы");
 
     state.currentSchedule = await res.json();
+    detectInitialDay();
+    renderDaysRibbon();
+    renderDaySchedule();
+  } catch (err) {
+    console.error(err);
+    document.getElementById("day-schedule-content").innerHTML =
+      `<div class="p-4 text-center text-xs text-red-400">Ошибка при получении расписания</div>`;
+  } finally {
+    showLoader(false);
+  }
+}
 
+async function selectTeacher(teacherId) {
+  state.selectedTeacherId = teacherId;
+  localStorage.setItem("my_schedule_teacher", teacherId);
+  renderPinnedChips();
+
+  const teacher = state.allTeachers.find((t) => t.id === teacherId);
+  const nameEl = document.getElementById("selected-item-name");
+  if (nameEl && teacher) {
+    nameEl.textContent = teacher.name;
+  }
+
+  showLoader(true);
+  try {
+    const res = await fetch(`/api/schedule/teacher/${teacherId}`);
+    if (!res.ok) throw new Error("Не удалось загрузить расписание преподавателя");
+
+    state.currentSchedule = await res.json();
     detectInitialDay();
     renderDaysRibbon();
     renderDaySchedule();
@@ -200,7 +398,7 @@ function detectInitialDay() {
 }
 
 // ─────────────────────────────────────────────
-// 3. Календарная лента дней (Пн, Вт, Ср...)
+// 6. Календарная лента дней недели (Пн, Вт, Ср...)
 // ─────────────────────────────────────────────
 function renderDaysRibbon() {
   const ribbon = document.getElementById("days-ribbon");
@@ -234,7 +432,7 @@ function renderDaysRibbon() {
 }
 
 // ─────────────────────────────────────────────
-// 4. Список пар: Точный дизайн карточек по референсу
+// 7. Список пар: Точный дизайн карточек по референсу
 // ─────────────────────────────────────────────
 function renderDaySchedule() {
   updateLiveStatusBar();
@@ -259,7 +457,6 @@ function renderDaySchedule() {
   });
 
   const pairNumbers = Array.from(pairsMap.keys()).sort((a, b) => a - b);
-
   const list = document.createElement("div");
   list.className = "space-y-3";
 
@@ -273,17 +470,14 @@ function renderDaySchedule() {
     const card = document.createElement("div");
     card.className = "lesson-card";
 
-    // Проверяем: пара разделена на подгруппы или общая
-    const isSplit = pairLessons.length > 1 || pairLessons.some((l) => l.subgroup > 0);
-
-    if (!isSplit) {
+    if (state.currentMode === "teacher") {
       // ═════════════════════════════════════════════
-      // СЛУЧАЙ 1: Общая пара для всей группы (как 3 пара на скриншоте)
-      // 3 колонки: [Время начала/конца] | [Предмет/Учитель] | [Кабинет/Номер пары]
+      // РЕЖИМ ПРЕПОДАВАТЕЛЯ: 3-колоночный стиль
+      // [Время начала/конца] | [Предмет и Группа] | [Кабинет и Номер пары]
       // ═════════════════════════════════════════════
       const lesson = pairLessons[0];
       const subj = cleanString(lesson.subject);
-      const teacher = cleanString(lesson.teacher);
+      const group = cleanString(lesson.group);
       const room = cleanString(lesson.room);
 
       card.innerHTML = `
@@ -294,10 +488,10 @@ function renderDaySchedule() {
             <span class="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400 leading-tight mt-0.5">${endStr}</span>
           </div>
 
-          <!-- Колонка 2: Предмет и Преподаватель (по центру) -->
+          <!-- Колонка 2: Предмет и Группа (по центру) -->
           <div class="flex-1 min-w-0 px-1 text-left">
             <div class="font-bold text-sm sm:text-base text-slate-900 dark:text-white leading-snug line-clamp-2">${subj}</div>
-            ${teacher ? `<div class="text-xs sm:text-sm font-normal text-slate-500 dark:text-slate-400 truncate mt-0.5">${teacher}</div>` : ""}
+            ${group ? `<div class="text-xs sm:text-sm font-semibold text-sky-500 dark:text-sky-400 truncate mt-0.5">Группа ${group}</div>` : ""}
           </div>
 
           <!-- Колонка 3: Кабинет и Пара (справа) -->
@@ -309,54 +503,70 @@ function renderDaySchedule() {
       `;
     } else {
       // ═════════════════════════════════════════════
-      // СЛУЧАЙ 2: Пара с подгруппами (как 1 и 2 пары на скриншоте)
-      // Вверху: Время и N-я пара
-      // Линия-разделитель
-      // 1-я подгруппа ... Кабинет
-      // Предмет
-      // Преподаватель
-      // Линия-разделитель
-      // 2-я подгруппа ... Кабинет
-      // Предмет
-      // Преподаватель
+      // РЕЖИМ ГРУППЫ: разделение по подгруппам или компактный вид
       // ═════════════════════════════════════════════
-      const sortedLessons = [...pairLessons].sort((a, b) => a.subgroup - b.subgroup);
+      const isSplit = pairLessons.length > 1 || pairLessons.some((l) => l.subgroup > 0);
 
-      let subgroupsHTML = "";
-      sortedLessons.forEach((l, index) => {
-        const subj = cleanString(l.subject);
-        const teacher = cleanString(l.teacher);
-        const room = cleanString(l.room);
-        const subTitle = l.subgroup > 0 ? `${l.subgroup}-я подгруппа` : "Вся группа";
+      if (!isSplit) {
+        // Случай 1: Общая пара для всей группы (3 колонки)
+        const lesson = pairLessons[0];
+        const subj = cleanString(lesson.subject);
+        const teacher = cleanString(lesson.teacher);
+        const room = cleanString(lesson.room);
 
-        // Если это не первая подгруппа, добавляем тонкую разделительную линию
-        const divider = index > 0 ? `<div class="card-divider"></div>` : "";
-
-        subgroupsHTML += `
-          ${divider}
-          <div class="space-y-0.5 text-left">
-            <div class="flex items-center justify-between text-xs sm:text-sm">
-              <span class="subgroup-label font-semibold">${subTitle}</span>
-              <span class="font-bold text-slate-900 dark:text-white text-sm sm:text-base">${room}</span>
+        card.innerHTML = `
+          <div class="flex items-center justify-between gap-3">
+            <div class="flex flex-col flex-shrink-0 text-left min-w-[50px]">
+              <span class="text-sm sm:text-base font-bold text-slate-900 dark:text-white leading-tight">${startStr || "—"}</span>
+              <span class="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400 leading-tight mt-0.5">${endStr}</span>
             </div>
-            <div class="font-bold text-base sm:text-lg text-slate-900 dark:text-white leading-snug pt-0.5">${subj}</div>
-            ${teacher ? `<div class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-normal pt-0.5">${teacher}</div>` : ""}
+
+            <div class="flex-1 min-w-0 px-1 text-left">
+              <div class="font-bold text-sm sm:text-base text-slate-900 dark:text-white leading-snug line-clamp-2">${subj}</div>
+              ${teacher ? `<div class="text-xs sm:text-sm font-normal text-slate-500 dark:text-slate-400 truncate mt-0.5">${teacher}</div>` : ""}
+            </div>
+
+            <div class="flex flex-col flex-shrink-0 text-right min-w-[52px]">
+              <span class="text-sm sm:text-base font-bold text-slate-900 dark:text-white leading-tight">${room || "—"}</span>
+              <span class="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400 leading-tight mt-0.5">${num} пара</span>
+            </div>
           </div>
         `;
-      });
+      } else {
+        // Случай 2: Пара с подгруппами (друг под другом)
+        const sortedLessons = [...pairLessons].sort((a, b) => a.subgroup - b.subgroup);
 
-      card.innerHTML = `
-        <!-- Шапка: Время слева, Номер пары справа -->
-        <div class="flex items-center justify-between">
-          <span class="text-sm sm:text-base font-bold text-slate-900 dark:text-white tracking-tight">${timeStr}</span>
-          <span class="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400">${num}-я пара</span>
-        </div>
+        let subgroupsHTML = "";
+        sortedLessons.forEach((l, index) => {
+          const subj = cleanString(l.subject);
+          const teacher = cleanString(l.teacher);
+          const room = cleanString(l.room);
+          const subTitle = l.subgroup > 0 ? `${l.subgroup}-я подгруппа` : "Вся группа";
+          const divider = index > 0 ? `<div class="card-divider"></div>` : "";
 
-        <div class="card-divider"></div>
+          subgroupsHTML += `
+            ${divider}
+            <div class="space-y-0.5 text-left">
+              <div class="flex items-center justify-between text-xs sm:text-sm">
+                <span class="subgroup-label font-semibold">${subTitle}</span>
+                <span class="font-bold text-slate-900 dark:text-white text-sm sm:text-base">${room}</span>
+              </div>
+              <div class="font-bold text-base sm:text-lg text-slate-900 dark:text-white leading-snug pt-0.5">${subj}</div>
+              ${teacher ? `<div class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-normal pt-0.5">${teacher}</div>` : ""}
+            </div>
+          `;
+        });
 
-        <!-- Блоки подгрупп -->
-        ${subgroupsHTML}
-      `;
+        card.innerHTML = `
+          <div class="flex items-center justify-between">
+            <span class="text-sm sm:text-base font-bold text-slate-900 dark:text-white tracking-tight">${timeStr}</span>
+            <span class="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400">${num}-я пара</span>
+          </div>
+
+          <div class="card-divider"></div>
+          ${subgroupsHTML}
+        `;
+      }
     }
 
     list.appendChild(card);
@@ -386,7 +596,7 @@ function renderDaySchedule() {
 }
 
 // ─────────────────────────────────────────────
-// 5. Компактная статусная строка (Текущая пара)
+// 8. Компактная статусная строка (Текущая пара)
 // ─────────────────────────────────────────────
 function startLiveTimer() {
   updateLiveStatusBar();
@@ -446,6 +656,8 @@ function updateLiveStatusBar() {
     }
   }
 
+  const isTeacher = state.currentMode === "teacher";
+
   if (currentLessons.length > 0) {
     bar.classList.remove("hidden");
     bar.className = "px-3 py-2 rounded-xl text-xs font-medium flex items-center justify-between border bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400";
@@ -453,11 +665,16 @@ function updateLiveStatusBar() {
     const secs = secondsRemaining % 60;
 
     let textDesc = "";
-    if (currentLessons.length === 1) {
+    if (isTeacher) {
       const l = currentLessons[0];
-      textDesc = `${cleanString(l.subject)} ${l.room ? `(${cleanString(l.room)})` : ""}`;
+      textDesc = `${cleanString(l.subject)} (каб. ${cleanString(l.room) || '—'}${l.group ? `, Гр. ${cleanString(l.group)}` : ''})`;
     } else {
-      textDesc = currentLessons.map((l) => `${l.subgroup} п/г: ${cleanString(l.subject)}`).join(" | ");
+      if (currentLessons.length === 1) {
+        const l = currentLessons[0];
+        textDesc = `${cleanString(l.subject)} ${l.room ? `(${cleanString(l.room)})` : ""}`;
+      } else {
+        textDesc = currentLessons.map((l) => `${l.subgroup} п/г: ${cleanString(l.subject)}`).join(" | ");
+      }
     }
 
     bar.innerHTML = `
@@ -475,10 +692,15 @@ function updateLiveStatusBar() {
     const secs = secondsRemaining % 60;
 
     let textDesc = "";
-    if (nextLessons.length === 1) {
-      textDesc = cleanString(nextLessons[0].subject);
+    if (isTeacher) {
+      const l = nextLessons[0];
+      textDesc = `${cleanString(l.subject)}${l.group ? ` (Гр. ${cleanString(l.group)})` : ''}`;
     } else {
-      textDesc = nextLessons.map((l) => `${l.subgroup} п/г: ${cleanString(l.subject)}`).join(" | ");
+      if (nextLessons.length === 1) {
+        textDesc = cleanString(nextLessons[0].subject);
+      } else {
+        textDesc = nextLessons.map((l) => `${l.subgroup} п/г: ${cleanString(l.subject)}`).join(" | ");
+      }
     }
 
     bar.innerHTML = `
@@ -495,7 +717,7 @@ function updateLiveStatusBar() {
 }
 
 // ─────────────────────────────────────────────
-// 6. Тема оформления (Светлая / Тёмная)
+// 9. Тема оформления (Светлая / Тёмная)
 // ─────────────────────────────────────────────
 function initTheme() {
   const saved = localStorage.getItem("theme") || "dark";
@@ -520,7 +742,7 @@ function updateThemeIcon(theme) {
 }
 
 // ─────────────────────────────────────────────
-// 7. Настройки звонков
+// 10. Настройки звонков
 // ─────────────────────────────────────────────
 function openBellSettings() {
   const modal = document.getElementById("bell-modal");
