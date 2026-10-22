@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="ru" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Уникальный концепт: Cyber-Bento & Nothing OS</title>
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+      background-color: #070709;
+      color: #f4f4f5;
+    }
+    .font-tech {
+      font-family: 'Chakra Petch', sans-serif;
+    }
+    .font-mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Фоновая сетка точек (Nothing OS style) */
+    .dot-matrix-bg {
+      background-image: radial-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+      background-size: 18px 18px;
+    }
+
+    /* Уникальные Bento-карточки */
+    .bento-card {
+      background: #0f1015;
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      border-radius: 20px;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .bento-card:hover {
+      border-color: rgba(245, 158, 11, 0.4);
+      transform: translateY(-2px);
+      box-shadow: 0 12px 28px -6px rgba(0, 0, 0, 0.8), 0 0 20px -4px rgba(245, 158, 11, 0.15);
+    }
+
+    /* Огромный водяной знак номера пары на фоне */
+    .watermark-num {
+      position: absolute;
+      right: 12px;
+      bottom: -10px;
+      font-family: 'Chakra Petch', sans-serif;
+      font-size: 5rem;
+      font-weight: 800;
+      color: rgba(255, 255, 255, 0.03);
+      line-height: 1;
+      pointer-events: none;
+      user-select: none;
+    }
+
+    /* Bento Hero Card для текущей пары */
+    .hero-bento {
+      background: linear-gradient(145deg, #15161e 0%, #0d0e14 100%);
+      border: 1px solid rgba(245, 158, 11, 0.35);
+      box-shadow: 0 10px 30px -5px rgba(245, 158, 11, 0.12);
+    }
+
+    /* Неоновые LED бейджи */
+    .led-badge-amber {
+      background: rgba(245, 158, 11, 0.12);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      color: #fbbf24;
+    }
+    .led-badge-cyan {
+      background: rgba(6, 182, 212, 0.12);
+      border: 1px solid rgba(6, 182, 212, 0.3);
+      color: #22d3ee;
+    }
+
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  </style>
+</head>
+<body class="dot-matrix-bg min-h-screen relative p-4 selection:bg-amber-500 selection:text-black">
+
+  <div class="max-w-md mx-auto space-y-3.5 relative z-10 pb-16">
+
+    <!-- Верхний служебный статус в индустриальном стиле -->
+    <div class="flex items-center justify-between text-xs text-zinc-500 pt-1 font-mono">
+      <div class="flex items-center gap-1.5 text-amber-400 font-bold tracking-widest text-[11px]">
+        <span class="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
+        CAMPUS.OS // v2.4
+      </div>
+      <a href="/static/index.html" class="hover:text-white transition flex items-center gap-1 font-mono text-xs">
+        <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i> Назад
+      </a>
+    </div>
+
+    <!-- ═══════════════════════════════════════
+         1. Шапка: Тактильный переключатель и выбор группы
+    ═══════════════════════════════════════ -->
+    <header class="space-y-2.5">
+      
+      <div class="flex items-center justify-between gap-2">
+        <!-- Тактильный переключатель [Студенты / Преподы] -->
+        <div class="flex p-1 rounded-xl bg-[#12131a] border border-white/5 text-xs font-mono">
+          <button class="px-3.5 py-1.5 rounded-lg font-bold text-black bg-amber-400 shadow-sm transition">
+            СТУДЕНТЫ
+          </button>
+          <button class="px-3.5 py-1.5 rounded-lg text-zinc-400 hover:text-white transition">
+            ПРЕПОДЫ
+          </button>
+        </div>
+
+        <div class="flex items-center gap-2 font-mono">
+          <button class="w-9 h-9 rounded-xl border border-white/10 bg-[#12131a] flex items-center justify-center text-zinc-300 hover:text-white transition">
+            <i data-lucide="bell" class="w-4 h-4 text-amber-400"></i>
+          </button>
+          <button class="w-9 h-9 rounded-xl border border-white/10 bg-[#12131a] flex items-center justify-center text-zinc-300 hover:text-white transition">
+            <i data-lucide="sliders-horizontal" class="w-4 h-4 text-zinc-300"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Селектор группы в стиле Nothing OS -->
+      <button class="w-full flex items-center justify-between p-3.5 rounded-2xl bg-[#0f1015] border border-white/10 hover:border-amber-400/50 transition group">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-xl bg-amber-400/10 border border-amber-400/20 flex items-center justify-center font-tech font-bold text-amber-400 text-sm">
+            221
+          </div>
+          <div class="text-left">
+            <div class="font-tech text-base font-bold text-white tracking-wide">ГРУППА 221</div>
+            <div class="text-[11px] font-mono text-zinc-400">38 студентов • 2 подгруппы</div>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="text-[10px] font-mono text-amber-400/80 bg-amber-400/10 px-2 py-0.5 rounded border border-amber-400/20">АКТИВНА</span>
+          <i data-lucide="chevron-down" class="w-4 h-4 text-zinc-400 group-hover:text-white transition"></i>
+        </div>
+      </button>
+
+    </header>
+
+    <!-- ═══════════════════════════════════════
+         2. Bento Hero Виджет: Текущая пара (Cyber-Bento)
+    ═══════════════════════════════════════ -->
+    <div class="hero-bento rounded-3xl p-4 space-y-3 relative overflow-hidden">
+      
+      <div class="flex items-center justify-between font-mono text-xs">
+        <div class="flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+          <span class="font-bold text-amber-400 tracking-wider uppercase text-[11px]">ИДЁТ СЕЙЧАС // 2 ПАРА</span>
+        </div>
+        <div class="led-badge-amber px-2.5 py-0.5 rounded-full font-bold text-xs font-mono">
+          ⏳ 34 МИН ОСТАЛОСЬ
+        </div>
+      </div>
+
+      <!-- Bento Grid внутри виджета -->
+      <div class="grid grid-cols-3 gap-2.5 pt-1">
+        
+        <!-- Колонка 1 и 2: Предмет и Преподаватель -->
+        <div class="col-span-2 space-y-1">
+          <div class="font-tech text-lg font-bold text-white leading-tight">
+            МЕТРОЛОГИЯ (ПЗ)
+          </div>
+          <div class="text-xs text-zinc-400 font-medium flex items-center gap-1.5">
+            <span class="w-1.5 h-1.5 rounded-full bg-zinc-500"></span> Суркова Т.Н.
+          </div>
+        </div>
+
+        <!-- Колонка 3: Крупный номер кабинета в рамке -->
+        <div class="flex flex-col items-center justify-center p-2 rounded-2xl bg-black/40 border border-white/5 text-center">
+          <span class="text-[9px] font-mono text-zinc-400 uppercase tracking-widest">КАБИНЕТ</span>
+          <span class="font-tech text-xl font-bold text-amber-300">305-н</span>
+        </div>
+
+      </div>
+
+      <!-- Сегментированный LED прогресс-бар (Cyberpunk style) -->
+      <div class="space-y-1.5 pt-1">
+        <div class="grid grid-cols-10 gap-1 h-2">
+          <div class="rounded-sm bg-amber-400 shadow-sm shadow-amber-400/50"></div>
+          <div class="rounded-sm bg-amber-400 shadow-sm shadow-amber-400/50"></div>
+          <div class="rounded-sm bg-amber-400 shadow-sm shadow-amber-400/50"></div>
+          <div class="rounded-sm bg-amber-400 shadow-sm shadow-amber-400/50"></div>
+          <div class="rounded-sm bg-amber-400 shadow-sm shadow-amber-400/50"></div>
+          <div class="rounded-sm bg-amber-400 shadow-sm shadow-amber-400/50"></div>
+          <div class="rounded-sm bg-amber-400 shadow-sm shadow-amber-400/50"></div>
+          <div class="rounded-sm bg-zinc-800"></div>
+          <div class="rounded-sm bg-zinc-800"></div>
+          <div class="rounded-sm bg-zinc-800"></div>
+        </div>
+        <div class="flex justify-between items-center text-[10px] font-mono text-zinc-500">
+          <span>НАЧАЛО 10:00</span>
+          <span>70% ПРОЙДЕНО</span>
+          <span>КОНЕЦ 11:35</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ═══════════════════════════════════════
+         3. Календарная лента: Дни недели в стиле Teenage Engineering
+    ═══════════════════════════════════════ -->
+    <div class="flex gap-2 overflow-x-auto no-scrollbar py-1">
+      
+      <button class="min-w-[62px] py-2.5 px-2 rounded-2xl bg-[#0f1015] border border-white/5 flex flex-col items-center justify-center gap-0.5 text-zinc-400 hover:border-white/20 transition">
+        <span class="text-[10px] font-mono uppercase font-bold text-zinc-500">ПН</span>
+        <span class="font-tech text-lg font-bold text-zinc-200">19</span>
+      </button>
+
+      <!-- Активный день с акцентом -->
+      <button class="min-w-[64px] py-2.5 px-2 rounded-2xl bg-amber-400 text-black flex flex-col items-center justify-center gap-0.5 shadow-lg shadow-amber-400/20 font-bold transition">
+        <span class="text-[10px] font-mono uppercase font-bold text-black/70">ВТ</span>
+        <span class="font-tech text-xl font-extrabold text-black">20</span>
+        <span class="w-1.5 h-1.5 rounded-full bg-black"></span>
+      </button>
+
+      <button class="min-w-[62px] py-2.5 px-2 rounded-2xl bg-[#0f1015] border border-white/5 flex flex-col items-center justify-center gap-0.5 text-zinc-400 hover:border-white/20 transition">
+        <span class="text-[10px] font-mono uppercase font-bold text-zinc-500">СР</span>
+        <span class="font-tech text-lg font-bold text-zinc-200">21</span>
+      </button>
+
+      <button class="min-w-[62px] py-2.5 px-2 rounded-2xl bg-[#0f1015] border border-white/5 flex flex-col items-center justify-center gap-0.5 text-zinc-400 hover:border-white/20 transition">
+        <span class="text-[10px] font-mono uppercase font-bold text-zinc-500">ЧТ</span>
+        <span class="font-tech text-lg font-bold text-zinc-200">22</span>
+      </button>
+
+      <button class="min-w-[62px] py-2.5 px-2 rounded-2xl bg-[#0f1015] border border-white/5 flex flex-col items-center justify-center gap-0.5 text-zinc-400 hover:border-white/20 transition">
+        <span class="text-[10px] font-mono uppercase font-bold text-zinc-500">ПТ</span>
+        <span class="font-tech text-lg font-bold text-zinc-200">23</span>
+      </button>
+
+    </div>
+
+    <!-- ═══════════════════════════════════════
+         4. Карточки пар: Bento-стиль с водяным номером
+    ═══════════════════════════════════════ -->
+    <div class="space-y-3 pt-1">
+
+      <!-- Карточка 1: 1-я пара с подгруппами -->
+      <div class="bento-card p-4 space-y-3">
+        <div class="watermark-num">01</div>
+
+        <!-- Шапка: Время + Номер пары -->
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="font-mono text-sm font-bold text-amber-400">08:15 — 09:50</span>
+          </div>
+          <span class="font-mono text-[11px] font-bold text-zinc-400 px-2.5 py-0.5 rounded-lg bg-white/5 border border-white/5">
+            1-Я ПАРА
+          </span>
+        </div>
+
+        <div class="h-[1px] bg-white/5"></div>
+
+        <!-- 1-я подгруппа -->
+        <div class="space-y-1 relative z-10">
+          <div class="flex items-center justify-between">
+            <span class="led-badge-cyan text-[10px] font-mono font-bold px-2 py-0.5 rounded-md">
+              1-Я ПОДГРУППА
+            </span>
+            <span class="font-tech text-sm font-bold text-white bg-white/5 px-2.5 py-0.5 rounded-lg border border-white/10">302</span>
+          </div>
+          <div class="font-tech text-base font-bold text-white tracking-wide">Обществознание</div>
+          <div class="text-xs text-zinc-400 font-medium">Юнусова В.Р.</div>
+        </div>
+
+        <div class="h-[1px] bg-white/5"></div>
+
+        <!-- 2-я подгруппа -->
+        <div class="space-y-1 relative z-10">
+          <div class="flex items-center justify-between">
+            <span class="led-badge-cyan text-[10px] font-mono font-bold px-2 py-0.5 rounded-md">
+              2-Я ПОДГРУППА
+            </span>
+            <span class="font-tech text-sm font-bold text-white bg-white/5 px-2.5 py-0.5 rounded-lg border border-white/10">301-н</span>
+          </div>
+          <div class="font-tech text-base font-bold text-white tracking-wide">Электротехника</div>
+          <div class="text-xs text-zinc-400 font-medium">Сурков А.В.</div>
+        </div>
+      </div>
+
+      <!-- Карточка 2: 3-я пара (Компактный 3-колоночный Bento стиль) -->
+      <div class="bento-card p-4">
+        <div class="watermark-num">03</div>
+
+        <div class="flex items-center justify-between gap-3 relative z-10">
+          <!-- Время -->
+          <div class="flex flex-col flex-shrink-0 text-left min-w-[55px] font-mono">
+            <span class="text-sm font-bold text-white leading-tight">12:05</span>
+            <span class="text-xs text-zinc-500 leading-tight mt-0.5">13:40</span>
+          </div>
+
+          <!-- Предмет и Препод -->
+          <div class="flex-1 min-w-0 px-2 text-left">
+            <div class="font-tech text-base font-bold text-white leading-snug truncate">Организация ТО (Л)</div>
+            <div class="text-xs text-zinc-400 truncate mt-0.5 font-medium">Арсланова Г.И.</div>
+          </div>
+
+          <!-- Кабинет и Пара -->
+          <div class="flex flex-col flex-shrink-0 text-right min-w-[55px]">
+            <span class="font-tech text-sm font-bold text-amber-400 leading-tight bg-amber-400/10 px-2 py-0.5 rounded-md border border-amber-400/20 text-center">105-н</span>
+            <span class="text-[11px] font-mono text-zinc-500 leading-tight mt-1 text-center">3 пара</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <script>
+    if (window.lucide) lucide.createIcons();
+  </script>
+</body>
+</html>

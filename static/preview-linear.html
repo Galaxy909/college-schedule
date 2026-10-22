@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="ru" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Концепт дизайна: Linear & Raycast Edition</title>
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+      background-color: #08090c;
+      color: #f3f4f6;
+    }
+    .font-mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    
+    /* Фоновй градиент в стиле Linear */
+    .linear-glow {
+      position: fixed;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100vw;
+      max-width: 600px;
+      height: 320px;
+      background: radial-gradient(circle at 50% 0%, rgba(99, 102, 241, 0.15) 0%, rgba(56, 189, 248, 0.05) 45%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Карточки в стиле Linear/Raycast: графит + волосяная рамка */
+    .linear-card {
+      background: #0f1117;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
+      overflow: hidden;
+    }
+    .linear-card:hover {
+      border-color: rgba(99, 102, 241, 0.4);
+      transform: translateY(-1px);
+      box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.6), 0 0 16px -2px rgba(99, 102, 241, 0.15);
+    }
+
+    /* Raycast Dynamic Capsule */
+    .raycast-capsule {
+      background: rgba(18, 22, 31, 0.85);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.7);
+    }
+
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  </style>
+</head>
+<body class="selection:bg-indigo-500 selection:text-white min-h-screen relative p-4">
+
+  <!-- Ambient Glow -->
+  <div class="linear-glow"></div>
+
+  <div class="max-w-md mx-auto space-y-4 relative z-10 pb-16">
+
+    <!-- Бейдж концепта -->
+    <div class="flex items-center justify-between text-xs text-slate-400 pt-1">
+      <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 font-mono font-medium">
+        <span class="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse"></span>
+        LINEAR & RAYCAST STYLE
+      </div>
+      <a href="/static/index.html" class="hover:text-white transition flex items-center gap-1 font-semibold text-xs">
+        <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i> На текущий сайт
+      </a>
+    </div>
+
+    <!-- ═══════════════════════════════════════
+         1. Верхняя панель: Переключатель и Группа
+    ═══════════════════════════════════════ -->
+    <header class="space-y-3 pt-1">
+      <div class="flex items-center justify-between gap-2">
+        <!-- Табы в стиле Raycast -->
+        <div class="flex p-1 rounded-xl bg-[#131722] border border-white/5 text-xs font-semibold">
+          <button class="px-3.5 py-1.5 rounded-lg font-bold text-white bg-indigo-600 shadow-sm transition">
+            Группы
+          </button>
+          <button class="px-3.5 py-1.5 rounded-lg text-slate-400 hover:text-white transition">
+            Преподаватели
+          </button>
+        </div>
+
+        <!-- Кнопки действий -->
+        <div class="flex items-center gap-2">
+          <button class="w-9 h-9 rounded-xl border border-white/10 bg-[#131722] flex items-center justify-center text-slate-300 hover:text-white transition">
+            <i data-lucide="clock" class="w-4 h-4 text-slate-300"></i>
+          </button>
+          <button class="w-9 h-9 rounded-xl border border-white/10 bg-[#131722] flex items-center justify-center text-slate-300 hover:text-white transition">
+            <i data-lucide="sparkles" class="w-4 h-4 text-amber-400"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Выбор группы -->
+      <button class="w-full flex items-center justify-between px-4 py-3 rounded-2xl bg-[#0f1117] border border-white/10 hover:border-indigo-500/50 transition shadow-lg group">
+        <div class="flex items-center gap-2.5">
+          <div class="w-2 h-2 rounded-full bg-indigo-500 group-hover:scale-125 transition-transform"></div>
+          <span class="font-bold text-sm tracking-tight text-white">Группа 221</span>
+          <span class="text-[11px] font-mono px-2 py-0.5 rounded-md bg-white/5 text-slate-400 border border-white/5">38 студентов</span>
+        </div>
+        <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400 group-hover:text-white transition"></i>
+      </button>
+    </header>
+
+    <!-- ═══════════════════════════════════════
+         2. Raycast-виджет: Текущая пара + Прогресс-бар (Dynamic Island)
+    ═══════════════════════════════════════ -->
+    <div class="raycast-capsule rounded-2xl p-3.5 space-y-2.5">
+      <div class="flex items-center justify-between gap-2">
+        <div class="flex items-center gap-2 truncate">
+          <span class="relative flex h-2.5 w-2.5 flex-shrink-0">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+          </span>
+          <span class="text-xs font-bold text-white tracking-wide">Идёт 2 пара:</span>
+          <span class="text-xs text-slate-300 truncate font-medium">Метрология</span>
+        </div>
+        <div class="flex items-center gap-1.5 flex-shrink-0">
+          <span class="font-mono text-xs font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
+            34 мин
+          </span>
+        </div>
+      </div>
+
+      <!-- Тонкий неоновый прогресс-бар урока -->
+      <div class="space-y-1">
+        <div class="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
+          <div class="h-full bg-gradient-to-r from-emerald-500 to-cyan-400 rounded-full" style="width: 65%;"></div>
+        </div>
+        <div class="flex justify-between items-center text-[10px] font-mono text-slate-500">
+          <span>10:00 (прошло 61 мин)</span>
+          <span class="text-slate-400">каб. 305-н</span>
+          <span>11:35</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════
+         3. Календарная лента дней
+    ═══════════════════════════════════════ -->
+    <div class="flex gap-2 overflow-x-auto no-scrollbar py-1">
+      <button class="min-w-[62px] py-2.5 px-2 rounded-xl bg-[#0f1117] border border-white/5 flex flex-col items-center justify-center gap-1 text-slate-400 hover:border-white/20 transition">
+        <span class="text-[10px] font-mono uppercase font-bold tracking-wider">ПН</span>
+        <span class="text-sm font-bold text-slate-200">19</span>
+      </button>
+
+      <!-- Активный день -->
+      <button class="min-w-[62px] py-2.5 px-2 rounded-xl bg-indigo-600 border border-indigo-500 text-white flex flex-col items-center justify-center gap-1 shadow-lg shadow-indigo-600/30 transition transform scale-105">
+        <span class="text-[10px] font-mono uppercase font-bold tracking-wider text-indigo-200">ВТ</span>
+        <span class="text-sm font-extrabold text-white">20</span>
+        <span class="w-1.5 h-1.5 rounded-full bg-cyan-300"></span>
+      </button>
+
+      <button class="min-w-[62px] py-2.5 px-2 rounded-xl bg-[#0f1117] border border-white/5 flex flex-col items-center justify-center gap-1 text-slate-400 hover:border-white/20 transition">
+        <span class="text-[10px] font-mono uppercase font-bold tracking-wider">СР</span>
+        <span class="text-sm font-bold text-slate-200">21</span>
+      </button>
+
+      <button class="min-w-[62px] py-2.5 px-2 rounded-xl bg-[#0f1117] border border-white/5 flex flex-col items-center justify-center gap-1 text-slate-400 hover:border-white/20 transition">
+        <span class="text-[10px] font-mono uppercase font-bold tracking-wider">ЧТ</span>
+        <span class="text-sm font-bold text-slate-200">22</span>
+      </button>
+
+      <button class="min-w-[62px] py-2.5 px-2 rounded-xl bg-[#0f1117] border border-white/5 flex flex-col items-center justify-center gap-1 text-slate-400 hover:border-white/20 transition">
+        <span class="text-[10px] font-mono uppercase font-bold tracking-wider">ПТ</span>
+        <span class="text-sm font-bold text-slate-200">23</span>
+      </button>
+    </div>
+
+    <!-- ═══════════════════════════════════════
+         4. Карточки пар (Стиль Linear)
+    ═══════════════════════════════════════ -->
+    <div class="space-y-3 pt-1">
+
+      <!-- Карточка 1: Разделение по подгруппам -->
+      <div class="linear-card p-4 space-y-3">
+        <!-- Шапка: Моноширинное время + Номер пары -->
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="font-mono text-sm font-bold text-white tracking-wide">08:15 → 09:50</span>
+            <span class="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
+          </div>
+          <span class="text-xs font-mono font-medium text-slate-400 px-2 py-0.5 rounded-md bg-white/5 border border-white/5">
+            1-я пара
+          </span>
+        </div>
+
+        <div class="h-[1px] bg-white/5"></div>
+
+        <!-- Подгруппа 1 -->
+        <div class="space-y-1">
+          <div class="flex items-center justify-between text-xs">
+            <span class="inline-flex items-center gap-1 font-mono font-semibold text-cyan-400 text-[11px] uppercase tracking-wider">
+              <span class="w-1 h-1 rounded-full bg-cyan-400"></span> 1-я подгруппа
+            </span>
+            <span class="font-mono font-bold text-white text-xs bg-white/5 px-2 py-0.5 rounded border border-white/5">каб. 305-н</span>
+          </div>
+          <div class="font-bold text-base text-white leading-snug">Метрология (ПЗ)</div>
+          <div class="text-xs text-slate-400 font-medium">Суркова Т.Н.</div>
+        </div>
+
+        <div class="h-[1px] bg-white/5"></div>
+
+        <!-- Подгруппа 2 -->
+        <div class="space-y-1">
+          <div class="flex items-center justify-between text-xs">
+            <span class="inline-flex items-center gap-1 font-mono font-semibold text-cyan-400 text-[11px] uppercase tracking-wider">
+              <span class="w-1 h-1 rounded-full bg-cyan-400"></span> 2-я подгруппа
+            </span>
+            <span class="font-mono font-bold text-white text-xs bg-white/5 px-2 py-0.5 rounded border border-white/5">каб. 304-н</span>
+          </div>
+          <div class="font-bold text-base text-white leading-snug">Иностранный язык (Л)</div>
+          <div class="text-xs text-slate-400 font-medium">Неведрова С.В.</div>
+        </div>
+      </div>
+
+      <!-- Карточка 2: Текущая пара (с неоновой подсветкой активного статуса) -->
+      <div class="linear-card p-4 space-y-3 !border-indigo-500/60 shadow-lg shadow-indigo-500/10">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="font-mono text-sm font-bold text-emerald-400 tracking-wide">10:00 → 11:35</span>
+            <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/30">СЕЙЧАС</span>
+          </div>
+          <span class="text-xs font-mono font-bold text-indigo-400 px-2 py-0.5 rounded-md bg-indigo-500/10 border border-indigo-500/20">
+            2-я пара
+          </span>
+        </div>
+
+        <div class="h-[1px] bg-white/5"></div>
+
+        <!-- Подгруппа 1 -->
+        <div class="space-y-1">
+          <div class="flex items-center justify-between text-xs">
+            <span class="inline-flex items-center gap-1 font-mono font-semibold text-cyan-400 text-[11px] uppercase tracking-wider">
+              <span class="w-1 h-1 rounded-full bg-cyan-400"></span> 1-я подгруппа
+            </span>
+            <span class="font-mono font-bold text-white text-xs bg-white/5 px-2 py-0.5 rounded border border-white/5">каб. 106</span>
+          </div>
+          <div class="font-bold text-base text-white leading-snug">Иностранный язык (Л)</div>
+          <div class="text-xs text-slate-400 font-medium">Мартынова Н.В.</div>
+        </div>
+
+        <div class="h-[1px] bg-white/5"></div>
+
+        <!-- Подгруппа 2 -->
+        <div class="space-y-1">
+          <div class="flex items-center justify-between text-xs">
+            <span class="inline-flex items-center gap-1 font-mono font-semibold text-cyan-400 text-[11px] uppercase tracking-wider">
+              <span class="w-1 h-1 rounded-full bg-cyan-400"></span> 2-я подгруппа
+            </span>
+            <span class="font-mono font-bold text-white text-xs bg-white/5 px-2 py-0.5 rounded border border-white/5">каб. 305-н</span>
+          </div>
+          <div class="font-bold text-base text-white leading-snug">Метрология (ПЗ)</div>
+          <div class="text-xs text-slate-400 font-medium">Суркова Т.Н.</div>
+        </div>
+      </div>
+
+      <!-- Карточка 3: Общая пара (Компактный стиль из 3 колонок) -->
+      <div class="linear-card p-4">
+        <div class="flex items-center justify-between gap-3">
+          <div class="flex flex-col flex-shrink-0 text-left min-w-[58px]">
+            <span class="font-mono text-sm font-bold text-white leading-tight">12:05</span>
+            <span class="font-mono text-xs text-slate-500 leading-tight mt-0.5">13:40</span>
+          </div>
+
+          <div class="flex-1 min-w-0 px-2 text-left">
+            <div class="font-bold text-sm sm:text-base text-white leading-snug truncate">Организация ТО (Л)</div>
+            <div class="text-xs text-slate-400 truncate mt-0.5 font-medium">Арсланова Г.И.</div>
+          </div>
+
+          <div class="flex flex-col flex-shrink-0 text-right min-w-[55px]">
+            <span class="font-mono text-xs font-bold text-white leading-tight bg-white/5 px-2 py-0.5 rounded border border-white/5">105-н</span>
+            <span class="text-xs font-mono text-slate-500 leading-tight mt-1">3 пара</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <script>
+    if (window.lucide) lucide.createIcons();
+  </script>
+</body>
+</html>

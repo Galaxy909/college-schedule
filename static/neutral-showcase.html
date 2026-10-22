@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="nordic">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Витрина нейтральных тем: 5 вариантов</title>
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <style>
+    /* ═══════════════════════════════════════
+       ОПРЕДЕЛЕНИЕ 5 НЕЙТРАЛЬНЫХ ТЕМ
+    ═══════════════════════════════════════ */
+    
+    /* 1. Nordic Slate (Скандинавский холодный гранит) */
+    [data-theme="nordic"] {
+      --bg: #090d14;
+      --card: #101622;
+      --border: #1c2638;
+      --divider: #172030;
+      --text: #f8fafc;
+      --text-muted: #8595a8;
+      --accent: #38bdf8;
+      --accent-bg: rgba(56, 189, 248, 0.1);
+      --badge-border: rgba(56, 189, 248, 0.25);
+      --time-badge: #e2e8f0;
+      --theme-name: "1. Nordic Slate (Скандинавский гранит)";
+      --theme-desc: "Спокойный, холодный тёмно-серый гранит с небесно-голубыми аккуратными метками. Максимально строгий и свежий.";
+    }
+
+    /* 2. Warm Notion (Тёплый пепел & Блокнот) */
+    [data-theme="warm"] {
+      --bg: #121214;
+      --card: #18181b;
+      --border: #27272a;
+      --divider: #222226;
+      --text: #f4f4f5;
+      --text-muted: #a1a1aa;
+      --accent: #fbbf24;
+      --accent-bg: rgba(251, 191, 36, 0.1);
+      --badge-border: rgba(251, 191, 36, 0.25);
+      --time-badge: #fafafa;
+      --theme-name: "2. Warm Notion (Тёплый пепел)";
+      --theme-desc: "Мягкий тёплый оттенок крафтовой бумаги и тёмного графита. Идеален для чтения, абсолютно не режет глаза ночью.";
+    }
+
+    /* 3. Pure Monochrome (Благородный 100% монохром) */
+    [data-theme="monochrome"] {
+      --bg: #08080a;
+      --card: #111114;
+      --border: #222227;
+      --divider: #1c1c22;
+      --text: #ffffff;
+      --text-muted: #71717a;
+      --accent: #d4d4d8;
+      --accent-bg: rgba(255, 255, 255, 0.08);
+      --badge-border: rgba(255, 255, 255, 0.18);
+      --time-badge: #ffffff;
+      --theme-name: "3. Pure Monochrome (Чистый монохром)";
+      --theme-desc: "0% лишних цветов. Только глубокий чёрный, титановый серый и благородный белый. Как в швейцарских часах.";
+    }
+
+    /* 4. Deep Sage (Тёмный лесной шалфей) */
+    [data-theme="sage"] {
+      --bg: #060d0b;
+      --card: #0d1714;
+      --border: #162923;
+      --divider: #12211c;
+      --text: #ecfdf5;
+      --text-muted: #6ee7b7;
+      --accent: #34d399;
+      --accent-bg: rgba(52, 211, 153, 0.12);
+      --badge-border: rgba(52, 211, 153, 0.25);
+      --time-badge: #f0fdf4;
+      --theme-name: "4. Deep Sage (Тёмный шалфей)";
+      --theme-desc: "Глубокие природные мятно-хвойные тона. Снимает усталость со зрительного нерва, создаёт расслабленный вайб.";
+    }
+
+    /* 5. Soft Twilight (Бархатные сумерки) */
+    [data-theme="twilight"] {
+      --bg: #080a14;
+      --card: #0f1424;
+      --border: #1a2238;
+      --divider: #151b2e;
+      --text: #f1f5f9;
+      --text-muted: #94a3b8;
+      --accent: #818cf8;
+      --accent-bg: rgba(129, 140, 248, 0.12);
+      --badge-border: rgba(129, 140, 248, 0.25);
+      --time-badge: #f8fafc;
+      --theme-name: "5. Soft Twilight (Мягкие сумерки)";
+      --theme-desc: "Мягкий глубокий сине-лиловый бархат с деликатным лавандовым акцентом. Спокойный, уютный и технологичный.";
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      transition: background-color 0.25s ease, color 0.25s ease;
+    }
+
+    .font-mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .schedule-card {
+      background-color: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 1rem 1.15rem;
+      transition: all 0.25s ease;
+    }
+
+    .schedule-card:hover {
+      border-color: var(--accent);
+      transform: translateY(-1px);
+    }
+
+    .card-divider {
+      height: 1px;
+      background-color: var(--divider);
+      margin: 0.75rem 0;
+    }
+
+    .theme-chip {
+      background-color: var(--card);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      transition: all 0.2s ease;
+    }
+    .theme-chip.active {
+      background-color: var(--text);
+      color: var(--bg);
+      border-color: var(--text);
+      font-weight: 700;
+    }
+
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  </style>
+</head>
+<body class="min-h-screen p-4 pb-20 selection:bg-slate-700 selection:text-white">
+
+  <!-- ═══════════════════════════════════════
+       1. ПАНЕЛЬ ВЫБОРА ТЕМЫ (Сверху)
+  ═══════════════════════════════════════ -->
+  <div class="max-w-xl mx-auto space-y-4">
+
+    <!-- Заголовок витрины -->
+    <div class="flex items-center justify-between pt-1">
+      <div>
+        <h1 class="text-sm font-extrabold tracking-tight text-white flex items-center gap-1.5">
+          <i data-lucide="palette" class="w-4 h-4 text-slate-400"></i>
+          Витрина нейтральных тем
+        </h1>
+        <p class="text-[11px] text-slate-400">Нажимай на кнопки ниже — дизайн сразу меняется!</p>
+      </div>
+      <a href="/static/index.html" class="text-xs font-semibold px-3 py-1.5 rounded-xl border border-white/10 hover:border-white/20 transition flex items-center gap-1 text-slate-300">
+        <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i> На сайт
+      </a>
+    </div>
+
+    <!-- Кнопки переключения 5 тем -->
+    <div class="flex gap-1.5 overflow-x-auto no-scrollbar py-1">
+      <button onclick="setTheme('nordic')" id="btn-nordic" class="theme-chip active px-3 py-2 rounded-xl text-xs font-semibold whitespace-nowrap flex items-center gap-1.5">
+        <span class="w-2 h-2 rounded-full bg-sky-400"></span> 1. Nordic Slate
+      </button>
+
+      <button onclick="setTheme('warm')" id="btn-warm" class="theme-chip px-3 py-2 rounded-xl text-xs font-semibold whitespace-nowrap flex items-center gap-1.5">
+        <span class="w-2 h-2 rounded-full bg-amber-400"></span> 2. Warm Notion
+      </button>
+
+      <button onclick="setTheme('monochrome')" id="btn-monochrome" class="theme-chip px-3 py-2 rounded-xl text-xs font-semibold whitespace-nowrap flex items-center gap-1.5">
+        <span class="w-2 h-2 rounded-full bg-zinc-300"></span> 3. Monochrome
+      </button>
+
+      <button onclick="setTheme('sage')" id="btn-sage" class="theme-chip px-3 py-2 rounded-xl text-xs font-semibold whitespace-nowrap flex items-center gap-1.5">
+        <span class="w-2 h-2 rounded-full bg-emerald-400"></span> 4. Deep Sage
+      </button>
+
+      <button onclick="setTheme('twilight')" id="btn-twilight" class="theme-chip px-3 py-2 rounded-xl text-xs font-semibold whitespace-nowrap flex items-center gap-1.5">
+        <span class="w-2 h-2 rounded-full bg-indigo-400"></span> 5. Soft Twilight
+      </button>
+    </div>
+
+    <!-- Инфо-карточка о выбранной теме -->
+    <div class="p-3.5 rounded-2xl border border-[var(--border)] bg-[var(--card)] transition-colors">
+      <div class="text-xs font-bold text-white mb-0.5" id="info-name">1. Nordic Slate (Скандинавский гранит)</div>
+      <div class="text-[11px] text-[var(--text-muted)] leading-relaxed" id="info-desc">
+        Спокойный, холодный тёмно-серый гранит с небесно-голубыми аккуратными метками. Максимально строгий и свежий.
+      </div>
+    </div>
+
+    <hr class="border-[var(--divider)] my-2" />
+
+    <!-- ═══════════════════════════════════════
+         2. САМ САЙТ В ВЫБРАННОМ ДИЗАЙНЕ
+    ═══════════════════════════════════════ -->
+    <header class="space-y-2.5 pt-1">
+      
+      <!-- Табы режимов + Кнопки настроек -->
+      <div class="flex items-center justify-between gap-2">
+        <div class="flex p-0.5 rounded-xl bg-[var(--card)] border border-[var(--border)] text-xs font-semibold">
+          <button class="px-3.5 py-1.5 rounded-lg font-bold bg-[var(--accent-bg)] text-[var(--accent)] border border-[var(--badge-border)]">
+            Группы
+          </button>
+          <button class="px-3.5 py-1.5 rounded-lg text-[var(--text-muted)] hover:text-white transition">
+            Преподаватели
+          </button>
+        </div>
+
+        <div class="flex items-center gap-1.5">
+          <button class="w-9 h-9 rounded-xl border border-[var(--border)] bg-[var(--card)] flex items-center justify-center text-[var(--text-muted)]">
+            <i data-lucide="clock" class="w-4 h-4"></i>
+          </button>
+          <button class="w-9 h-9 rounded-xl border border-[var(--border)] bg-[var(--card)] flex items-center justify-center text-[var(--text-muted)]">
+            <i data-lucide="sun" class="w-4 h-4"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Селектор группы -->
+      <button class="w-full flex items-center justify-between px-4 py-3 rounded-2xl bg-[var(--card)] border border-[var(--border)] hover:border-[var(--accent)] transition">
+        <div class="flex items-center gap-2.5">
+          <span class="w-2 h-2 rounded-full bg-[var(--accent)]"></span>
+          <span class="font-bold text-sm tracking-tight text-[var(--text)]">Группа 221</span>
+        </div>
+        <i data-lucide="chevron-down" class="w-4 h-4 text-[var(--text-muted)]"></i>
+      </button>
+
+    </header>
+
+    <!-- Живой статус текущей пары -->
+    <div class="px-3.5 py-2.5 rounded-xl text-xs font-medium flex items-center justify-between border border-[var(--badge-border)] bg-[var(--accent-bg)] text-[var(--text)]">
+      <div class="flex items-center gap-2 truncate">
+        <span class="w-2 h-2 rounded-full bg-[var(--accent)] animate-pulse"></span>
+        <span class="font-bold">Идёт 2 пара:</span>
+        <span class="truncate">Метрология (каб. 305-н)</span>
+      </div>
+      <span class="font-mono font-bold whitespace-nowrap pl-2 text-[var(--accent)]">34м 12с</span>
+    </div>
+
+    <!-- Календарная лента дней -->
+    <div class="flex gap-1.5 overflow-x-auto no-scrollbar py-1">
+      <button class="min-w-[58px] py-2 px-1 rounded-xl bg-[var(--card)] border border-[var(--border)] flex flex-col items-center justify-center gap-0.5 text-[var(--text-muted)]">
+        <span class="text-[10px] font-bold uppercase tracking-wider">ПН</span>
+        <span class="text-sm font-bold text-[var(--text)]">19</span>
+      </button>
+
+      <!-- Активный день -->
+      <button class="min-w-[58px] py-2 px-1 rounded-xl bg-[var(--accent-bg)] border border-[var(--accent)] text-[var(--text)] flex flex-col items-center justify-center gap-0.5 font-bold shadow-sm">
+        <span class="text-[10px] font-bold uppercase tracking-wider text-[var(--accent)]">ВТ</span>
+        <span class="text-sm font-extrabold text-[var(--text)]">20</span>
+        <span class="w-1.5 h-1.5 rounded-full bg-[var(--accent)]"></span>
+      </button>
+
+      <button class="min-w-[58px] py-2 px-1 rounded-xl bg-[var(--card)] border border-[var(--border)] flex flex-col items-center justify-center gap-0.5 text-[var(--text-muted)]">
+        <span class="text-[10px] font-bold uppercase tracking-wider">СР</span>
+        <span class="text-sm font-bold text-[var(--text)]">21</span>
+      </button>
+
+      <button class="min-w-[58px] py-2 px-1 rounded-xl bg-[var(--card)] border border-[var(--border)] flex flex-col items-center justify-center gap-0.5 text-[var(--text-muted)]">
+        <span class="text-[10px] font-bold uppercase tracking-wider">ЧТ</span>
+        <span class="text-sm font-bold text-[var(--text)]">22</span>
+      </button>
+
+      <button class="min-w-[58px] py-2 px-1 rounded-xl bg-[var(--card)] border border-[var(--border)] flex flex-col items-center justify-center gap-0.5 text-[var(--text-muted)]">
+        <span class="text-[10px] font-bold uppercase tracking-wider">ПТ</span>
+        <span class="text-sm font-bold text-[var(--text)]">23</span>
+      </button>
+    </div>
+
+    <!-- Карточки пар -->
+    <div class="space-y-3 pt-1">
+
+      <!-- Карточка 1: С подгруппами -->
+      <div class="schedule-card space-y-2.5">
+        <div class="flex items-center justify-between">
+          <span class="text-sm font-bold text-[var(--time-badge)] tracking-tight">08:15–09:50</span>
+          <span class="text-xs text-[var(--text-muted)]">1-я пара</span>
+        </div>
+
+        <div class="card-divider"></div>
+
+        <!-- 1 подгруппа -->
+        <div class="space-y-0.5 text-left">
+          <div class="flex items-center justify-between text-xs">
+            <span class="font-semibold text-[var(--accent)]">1-я подгруппа</span>
+            <span class="font-bold text-[var(--text)] text-sm">305-н</span>
+          </div>
+          <div class="font-bold text-base text-[var(--text)] leading-snug pt-0.5">Метрология (ПЗ)</div>
+          <div class="text-xs text-[var(--text-muted)] pt-0.5">Суркова Т.Н.</div>
+        </div>
+
+        <div class="card-divider"></div>
+
+        <!-- 2 подгруппа -->
+        <div class="space-y-0.5 text-left">
+          <div class="flex items-center justify-between text-xs">
+            <span class="font-semibold text-[var(--accent)]">2-я подгруппа</span>
+            <span class="font-bold text-[var(--text)] text-sm">304-н</span>
+          </div>
+          <div class="font-bold text-base text-[var(--text)] leading-snug pt-0.5">Ин.язык (Л)</div>
+          <div class="text-xs text-[var(--text-muted)] pt-0.5">Неведрова С.В.</div>
+        </div>
+      </div>
+
+      <!-- Карточка 2: Общая пара (3 колонки) -->
+      <div class="schedule-card">
+        <div class="flex items-center justify-between gap-3">
+          <div class="flex flex-col flex-shrink-0 text-left min-w-[50px]">
+            <span class="text-sm font-bold text-[var(--text)] leading-tight">12:05</span>
+            <span class="text-xs text-[var(--text-muted)] leading-tight mt-0.5">13:40</span>
+          </div>
+
+          <div class="flex-1 min-w-0 px-2 text-left">
+            <div class="font-bold text-base text-[var(--text)] leading-snug truncate">Орг.ТО (Л)</div>
+            <div class="text-xs text-[var(--text-muted)] truncate mt-0.5">Арсланова Г.И.</div>
+          </div>
+
+          <div class="flex flex-col flex-shrink-0 text-right min-w-[52px]">
+            <span class="text-sm font-bold text-[var(--text)] leading-tight">105-н</span>
+            <span class="text-xs text-[var(--text-muted)] leading-tight mt-0.5">3 пара</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <script>
+    if (window.lucide) lucide.createIcons();
+
+    function setTheme(theme) {
+      document.documentElement.setAttribute('data-theme', theme);
+      
+      // Обновляем активную кнопку
+      document.querySelectorAll('.theme-chip').forEach(b => b.classList.remove('active'));
+      const activeBtn = document.getElementById('btn-' + theme);
+      if (activeBtn) activeBtn.classList.add('active');
+
+      // Обновляем описание
+      const style = getComputedStyle(document.documentElement);
+      document.getElementById('info-name').textContent = style.getPropertyValue('--theme-name').replace(/"/g, '').trim();
+      document.getElementById('info-desc').textContent = style.getPropertyValue('--theme-desc').replace(/"/g, '').trim();
+    }
+  </script>
+</body>
+</html>

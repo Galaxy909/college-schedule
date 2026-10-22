@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="ru" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Вариант: Acid Cyber & Streetwear</title>
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=JetBrains+Mono:wght@500;700;800&family=Plus+Jakarta+Sans:wght@500;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: #030304;
+      color: #ffffff;
+    }
+    .font-syne {
+      font-family: 'Syne', sans-serif;
+    }
+    .font-mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Кислотный неоновый акцент */
+    :root {
+      --acid: #ccff00;
+      --violet: #b026ff;
+    }
+
+    /* Техническая диагональная полоса */
+    .hazard-stripe {
+      background: repeating-linear-gradient(
+        -45deg,
+        #ccff00,
+        #ccff00 10px,
+        #000000 10px,
+        #000000 20px
+      );
+    }
+
+    /* Карточки в стиле Off-White / Стритвир */
+    .street-card {
+      background: #0d0d12;
+      border: 1.5px solid #1f2029;
+      border-radius: 18px;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .street-card:hover {
+      border-color: #ccff00;
+      transform: translateY(-2px);
+      box-shadow: 0 10px 30px -5px rgba(204, 255, 0, 0.15);
+    }
+
+    /* Hero Streetwear Banner */
+    .hero-street {
+      background: linear-gradient(135deg, #13141c 0%, #08080b 100%);
+      border: 1.5px solid #ccff00;
+      box-shadow: 0 10px 40px -10px rgba(204, 255, 0, 0.25);
+    }
+
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  </style>
+</head>
+<body class="min-h-screen p-4 selection:bg-[#ccff00] selection:text-black">
+
+  <div class="max-w-md mx-auto space-y-4 pb-16">
+
+    <!-- Служебный бар -->
+    <div class="flex items-center justify-between font-mono text-[11px] text-zinc-500 pt-1">
+      <div class="flex items-center gap-1.5 text-[#ccff00] font-bold tracking-widest">
+        <span class="w-2 h-2 bg-[#ccff00] rounded-sm animate-pulse"></span>
+        [ STREET.CAMPUS // DROP_01 ]
+      </div>
+      <a href="/static/index.html" class="hover:text-white transition flex items-center gap-1 font-mono text-xs">
+        <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i> На сайт
+      </a>
+    </div>
+
+    <!-- ═══════════════════════════════════════
+         1. Шапка: Streetwear Style
+    ═══════════════════════════════════════ -->
+    <header class="space-y-3">
+      <div class="flex items-center justify-between gap-2">
+        
+        <!-- Табы -->
+        <div class="flex p-1 rounded-xl bg-[#12131a] border border-white/10 text-xs font-mono font-bold">
+          <button class="px-3.5 py-1.5 rounded-lg bg-[#ccff00] text-black shadow-md transition">
+            СТУДЕНТЫ
+          </button>
+          <button class="px-3.5 py-1.5 rounded-lg text-zinc-400 hover:text-white transition">
+            ПРЕПОДЫ
+          </button>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <button class="w-10 h-10 rounded-xl border border-white/10 bg-[#12131a] flex items-center justify-center text-zinc-300 hover:border-[#ccff00] transition">
+            <i data-lucide="bell" class="w-4 h-4 text-[#ccff00]"></i>
+          </button>
+          <button class="w-10 h-10 rounded-xl border border-white/10 bg-[#12131a] flex items-center justify-center text-zinc-300 hover:border-[#ccff00] transition">
+            <i data-lucide="settings" class="w-4 h-4"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Селектор группы (Стикер-стиль) -->
+      <button class="w-full flex items-center justify-between p-3.5 rounded-2xl bg-[#0e0f14] border border-white/15 hover:border-[#ccff00] transition group">
+        <div class="flex items-center gap-3">
+          <div class="px-2.5 py-1 rounded-md bg-[#ccff00] text-black font-syne font-extrabold text-sm tracking-wider">
+            #221
+          </div>
+          <div class="text-left font-mono">
+            <div class="font-syne text-base font-black text-white tracking-wider">ГРУППА 221</div>
+            <div class="text-[11px] text-zinc-400">ПОЛНЫЙ СОСТАВ • 2 ПОДГРУППЫ</div>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-white/5 border border-white/10 text-zinc-400 font-bold">ОНЛАЙН</span>
+          <i data-lucide="chevron-down" class="w-4 h-4 text-zinc-400 group-hover:text-[#ccff00] transition"></i>
+        </div>
+      </button>
+    </header>
+
+    <!-- ═══════════════════════════════════════
+         2. Hero Модуль: Текущая пара (Стритвир постер)
+    ═══════════════════════════════════════ -->
+    <div class="hero-street rounded-2xl p-4 space-y-3">
+      
+      <div class="flex items-center justify-between font-mono">
+        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#ccff00]/10 border border-[#ccff00]/30 text-[#ccff00] font-black text-[11px] tracking-wider uppercase">
+          ● СЕЙЧАС В ЭФИРЕ // 2 ПАРА
+        </span>
+        <span class="font-syne font-black text-sm text-white bg-white/10 px-3 py-1 rounded-md">
+          34 МИН
+        </span>
+      </div>
+
+      <div class="flex items-start justify-between gap-3 pt-1">
+        <div class="space-y-1">
+          <h2 class="font-syne text-xl font-black text-white tracking-tight uppercase leading-tight">
+            МЕТРОЛОГИЯ (ПЗ)
+          </h2>
+          <div class="font-mono text-xs text-zinc-400">
+            ПРЕПОДАВАТЕЛЬ: <span class="text-white font-bold">Суркова Т.Н.</span>
+          </div>
+        </div>
+
+        <div class="flex flex-col items-center justify-center px-3.5 py-2 rounded-xl bg-black border border-[#ccff00]/40">
+          <span class="text-[9px] font-mono text-zinc-400 uppercase tracking-widest">АУДИТОРИЯ</span>
+          <span class="font-syne text-xl font-black text-[#ccff00]">305-Н</span>
+        </div>
+      </div>
+
+      <!-- Прогресс-бар с диагональной штриховкой -->
+      <div class="space-y-1.5 pt-1">
+        <div class="w-full h-3 bg-black rounded-lg overflow-hidden border border-white/15 p-0.5">
+          <div class="h-full hazard-stripe rounded" style="width: 68%;"></div>
+        </div>
+        <div class="flex justify-between font-mono text-[10px] text-zinc-400">
+          <span>СТАРТ 10:00</span>
+          <span class="text-[#ccff00] font-bold">68% ПРОЙДЕНО</span>
+          <span>ФИНИШ 11:35</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ═══════════════════════════════════════
+         3. Календарная лента: Дни недели
+    ═══════════════════════════════════════ -->
+    <div class="flex gap-2 overflow-x-auto no-scrollbar py-1 font-mono">
+      
+      <button class="min-w-[62px] py-2.5 px-2 rounded-xl bg-[#0d0d12] border border-white/10 flex flex-col items-center justify-center gap-0.5 text-zinc-400 hover:border-white/30 transition">
+        <span class="text-[10px] font-bold text-zinc-500">ПН</span>
+        <span class="font-syne text-lg font-black text-white">19</span>
+      </button>
+
+      <!-- Активный день -->
+      <button class="min-w-[64px] py-2.5 px-2 rounded-xl bg-[#ccff00] text-black flex flex-col items-center justify-center gap-0.5 font-bold shadow-lg shadow-[#ccff00]/25 transition">
+        <span class="text-[10px] font-black text-black/70">ВТ</span>
+        <span class="font-syne text-xl font-black text-black">20</span>
+        <span class="w-1.5 h-1.5 rounded-full bg-black"></span>
+      </button>
+
+      <button class="min-w-[62px] py-2.5 px-2 rounded-xl bg-[#0d0d12] border border-white/10 flex flex-col items-center justify-center gap-0.5 text-zinc-400 hover:border-white/30 transition">
+        <span class="text-[10px] font-bold text-zinc-500">СР</span>
+        <span class="font-syne text-lg font-black text-white">21</span>
+      </button>
+
+      <button class="min-w-[62px] py-2.5 px-2 rounded-xl bg-[#0d0d12] border border-white/10 flex flex-col items-center justify-center gap-0.5 text-zinc-400 hover:border-white/30 transition">
+        <span class="text-[10px] font-bold text-zinc-500">ЧТ</span>
+        <span class="font-syne text-lg font-black text-white">22</span>
+      </button>
+
+      <button class="min-w-[62px] py-2.5 px-2 rounded-xl bg-[#0d0d12] border border-white/10 flex flex-col items-center justify-center gap-0.5 text-zinc-400 hover:border-white/30 transition">
+        <span class="text-[10px] font-bold text-zinc-500">ПТ</span>
+        <span class="font-syne text-lg font-black text-white">23</span>
+      </button>
+
+    </div>
+
+    <!-- ═══════════════════════════════════════
+         4. Карточки пар
+    ═══════════════════════════════════════ -->
+    <div class="space-y-3 pt-1">
+
+      <!-- Карточка 1: С подгруппами -->
+      <div class="street-card p-4 space-y-3">
+        <div class="flex items-center justify-between font-mono">
+          <div class="flex items-center gap-2">
+            <span class="text-sm font-black text-[#ccff00]">08:15 — 09:50</span>
+          </div>
+          <span class="text-xs font-bold text-zinc-300 px-2.5 py-0.5 rounded bg-white/5 border border-white/10">
+            01 ПАРА
+          </span>
+        </div>
+
+        <div class="h-[1px] bg-white/10"></div>
+
+        <!-- 1-я подгруппа -->
+        <div class="space-y-1">
+          <div class="flex items-center justify-between text-xs font-mono">
+            <span class="text-[#ccff00] font-bold text-[11px] bg-[#ccff00]/10 px-2 py-0.5 rounded border border-[#ccff00]/20">
+              1-Я ПОДГРУППА
+            </span>
+            <span class="font-syne font-black text-sm text-white bg-white/10 px-2 py-0.5 rounded">302</span>
+          </div>
+          <div class="font-syne text-base font-black text-white tracking-wide uppercase pt-0.5">Обществознание</div>
+          <div class="font-mono text-xs text-zinc-400">Юнусова В.Р.</div>
+        </div>
+
+        <div class="h-[1px] bg-white/10"></div>
+
+        <!-- 2-я подгруппа -->
+        <div class="space-y-1">
+          <div class="flex items-center justify-between text-xs font-mono">
+            <span class="text-[#b026ff] font-bold text-[11px] bg-[#b026ff]/10 px-2 py-0.5 rounded border border-[#b026ff]/20">
+              2-Я ПОДГРУППА
+            </span>
+            <span class="font-syne font-black text-sm text-white bg-white/10 px-2 py-0.5 rounded">301-Н</span>
+          </div>
+          <div class="font-syne text-base font-black text-white tracking-wide uppercase pt-0.5">Электротехника</div>
+          <div class="font-mono text-xs text-zinc-400">Сурков А.В.</div>
+        </div>
+      </div>
+
+      <!-- Карточка 2: Общая пара -->
+      <div class="street-card p-4">
+        <div class="flex items-center justify-between gap-3 font-mono">
+          <div class="flex flex-col flex-shrink-0 text-left min-w-[55px]">
+            <span class="font-syne text-sm font-black text-white leading-tight">12:05</span>
+            <span class="text-xs text-zinc-500 leading-tight mt-0.5">13:40</span>
+          </div>
+
+          <div class="flex-1 min-w-0 px-2 text-left">
+            <div class="font-syne text-base font-black text-white leading-snug uppercase truncate">Организация ТО (Л)</div>
+            <div class="text-xs text-zinc-400 truncate mt-0.5">Арсланова Г.И.</div>
+          </div>
+
+          <div class="flex flex-col flex-shrink-0 text-right min-w-[55px]">
+            <span class="font-syne text-sm font-black text-[#ccff00] leading-tight bg-[#ccff00]/10 px-2 py-0.5 rounded border border-[#ccff00]/25 text-center">105-Н</span>
+            <span class="text-[11px] text-zinc-400 leading-tight mt-1 text-center font-bold">03 ПАРА</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <script>
+    if (window.lucide) lucide.createIcons();
+  </script>
+</body>
+</html>

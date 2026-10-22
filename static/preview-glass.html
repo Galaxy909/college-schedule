@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="ru" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Вариант: Liquid Glass & visionOS</title>
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+
+  <style>
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: #05060f;
+      color: #f8fafc;
+    }
+    .font-display {
+      font-family: 'Space Grotesk', sans-serif;
+    }
+
+    /* Аврора градиенты на фоне */
+    .aurora-bg {
+      position: fixed;
+      inset: 0;
+      overflow: hidden;
+      pointer-events: none;
+      z-index: 0;
+    }
+    .aurora-1 {
+      position: absolute;
+      top: -100px;
+      left: -100px;
+      width: 450px;
+      height: 450px;
+      background: radial-gradient(circle, rgba(124, 58, 237, 0.28) 0%, transparent 70%);
+      filter: blur(50px);
+    }
+    .aurora-2 {
+      position: absolute;
+      top: 150px;
+      right: -100px;
+      width: 400px;
+      height: 400px;
+      background: radial-gradient(circle, rgba(6, 182, 212, 0.22) 0%, transparent 70%);
+      filter: blur(60px);
+    }
+
+    /* Жидкое стекло (Liquid Glass) */
+    .liquid-card {
+      background: rgba(22, 26, 46, 0.55);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 22px;
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .liquid-card:hover {
+      border-color: rgba(255, 255, 255, 0.25);
+      transform: translateY(-2px);
+      box-shadow: 0 14px 40px -4px rgba(124, 58, 237, 0.25);
+    }
+
+    /* visionOS Capsule */
+    .vision-capsule {
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      box-shadow: 0 8px 32px -4px rgba(0, 0, 0, 0.5), inset 0 1px 1px 0 rgba(255, 255, 255, 0.2);
+    }
+
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  </style>
+</head>
+<body class="min-h-screen p-4 selection:bg-purple-500 selection:text-white relative">
+
+  <!-- Aurora Lights -->
+  <div class="aurora-bg">
+    <div class="aurora-1"></div>
+    <div class="aurora-2"></div>
+  </div>
+
+  <div class="max-w-md mx-auto space-y-4 pb-16 relative z-10">
+
+    <!-- Статус бар -->
+    <div class="flex items-center justify-between text-xs text-slate-400 pt-1">
+      <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full vision-capsule text-cyan-300 font-semibold text-[11px]">
+        <span class="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse"></span>
+        LIQUID GLASS // visionOS
+      </div>
+      <a href="/static/index.html" class="hover:text-white transition flex items-center gap-1 font-semibold text-xs text-slate-400">
+        <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i> На сайт
+      </a>
+    </div>
+
+    <!-- ═══════════════════════════════════════
+         1. Шапка: visionOS Style
+    ═══════════════════════════════════════ -->
+    <header class="space-y-3">
+      <div class="flex items-center justify-between gap-2">
+        
+        <!-- Табы -->
+        <div class="flex p-1 rounded-2xl vision-capsule text-xs font-semibold">
+          <button class="px-4 py-1.5 rounded-xl font-bold text-white bg-gradient-to-r from-violet-600 to-indigo-600 shadow-lg shadow-indigo-500/30 transition">
+            Группы
+          </button>
+          <button class="px-4 py-1.5 rounded-xl text-slate-400 hover:text-white transition">
+            Преподаватели
+          </button>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <button class="w-10 h-10 rounded-2xl vision-capsule flex items-center justify-center text-slate-300 hover:text-white transition">
+            <i data-lucide="clock" class="w-4 h-4 text-cyan-300"></i>
+          </button>
+          <button class="w-10 h-10 rounded-2xl vision-capsule flex items-center justify-center text-slate-300 hover:text-white transition">
+            <i data-lucide="sun" class="w-4 h-4 text-amber-300"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Селектор группы (Стеклянная кнопка) -->
+      <button class="w-full flex items-center justify-between p-3.5 rounded-2xl liquid-card group">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-cyan-500 to-violet-500 flex items-center justify-center font-display font-bold text-white text-sm shadow-md">
+            221
+          </div>
+          <div class="text-left">
+            <div class="font-display text-base font-bold text-white tracking-tight">Группа 221</div>
+            <div class="text-xs text-slate-400">Техническое отделение</div>
+          </div>
+        </div>
+        <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400 group-hover:text-white transition"></i>
+      </button>
+    </header>
+
+    <!-- ═══════════════════════════════════════
+         2. Hero Виджет: Стеклянная капсула текущей пары
+    ═══════════════════════════════════════ -->
+    <div class="vision-capsule rounded-3xl p-4 space-y-3 relative overflow-hidden">
+      
+      <div class="flex items-center justify-between text-xs">
+        <div class="flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+          <span class="font-bold text-emerald-400 uppercase tracking-wider text-[11px]">Идёт 2 пара</span>
+        </div>
+        <span class="font-display font-bold text-xs text-white bg-white/10 px-3 py-1 rounded-full border border-white/10">
+          Осталось 34 мин
+        </span>
+      </div>
+
+      <div class="flex items-center justify-between gap-3 pt-1">
+        <div class="space-y-1">
+          <h2 class="font-display text-lg font-bold text-white tracking-tight leading-tight">
+            Метрология (ПЗ)
+          </h2>
+          <div class="text-xs text-slate-300 flex items-center gap-1.5">
+            <i data-lucide="user" class="w-3.5 h-3.5 text-cyan-400"></i> Суркова Т.Н.
+          </div>
+        </div>
+
+        <div class="flex flex-col items-center justify-center px-3.5 py-2 rounded-2xl bg-white/5 border border-white/15">
+          <span class="text-[9px] text-slate-400 uppercase tracking-widest font-semibold">Кабинет</span>
+          <span class="font-display text-lg font-bold text-cyan-300">305-н</span>
+        </div>
+      </div>
+
+      <!-- Неоновый плавный градиентный прогресс -->
+      <div class="space-y-1.5 pt-1">
+        <div class="w-full h-2 bg-slate-900/60 rounded-full overflow-hidden border border-white/10 p-0.5">
+          <div class="h-full bg-gradient-to-r from-violet-500 via-indigo-400 to-cyan-400 rounded-full shadow-lg shadow-cyan-500/50" style="width: 65%;"></div>
+        </div>
+        <div class="flex justify-between text-[10px] text-slate-400 font-medium">
+          <span>10:00</span>
+          <span class="text-cyan-300">65% времени урока</span>
+          <span>11:35</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ═══════════════════════════════════════
+         3. Календарная лента: Дни недели
+    ═══════════════════════════════════════ -->
+    <div class="flex gap-2 overflow-x-auto no-scrollbar py-1">
+      
+      <button class="min-w-[62px] py-2.5 px-2 rounded-2xl liquid-card flex flex-col items-center justify-center gap-0.5 text-slate-400 hover:text-white transition">
+        <span class="text-[10px] uppercase font-bold text-slate-500">ПН</span>
+        <span class="font-display text-base font-bold text-white">19</span>
+      </button>
+
+      <!-- Активный день -->
+      <button class="min-w-[64px] py-2.5 px-2 rounded-2xl bg-gradient-to-b from-violet-600 to-indigo-600 text-white flex flex-col items-center justify-center gap-0.5 font-bold shadow-lg shadow-violet-600/30 transition transform scale-105 border border-white/20">
+        <span class="text-[10px] uppercase font-bold text-violet-200">ВТ</span>
+        <span class="font-display text-lg font-extrabold text-white">20</span>
+        <span class="w-1.5 h-1.5 rounded-full bg-cyan-300"></span>
+      </button>
+
+      <button class="min-w-[62px] py-2.5 px-2 rounded-2xl liquid-card flex flex-col items-center justify-center gap-0.5 text-slate-400 hover:text-white transition">
+        <span class="text-[10px] uppercase font-bold text-slate-500">СР</span>
+        <span class="font-display text-base font-bold text-white">21</span>
+      </button>
+
+      <button class="min-w-[62px] py-2.5 px-2 rounded-2xl liquid-card flex flex-col items-center justify-center gap-0.5 text-slate-400 hover:text-white transition">
+        <span class="text-[10px] uppercase font-bold text-slate-500">ЧТ</span>
+        <span class="font-display text-base font-bold text-white">22</span>
+      </button>
+
+      <button class="min-w-[62px] py-2.5 px-2 rounded-2xl liquid-card flex flex-col items-center justify-center gap-0.5 text-slate-400 hover:text-white transition">
+        <span class="text-[10px] uppercase font-bold text-slate-500">ПТ</span>
+        <span class="font-display text-base font-bold text-white">23</span>
+      </button>
+
+    </div>
+
+    <!-- ═══════════════════════════════════════
+         4. Карточки пар (Стеклянный стиль)
+    ═══════════════════════════════════════ -->
+    <div class="space-y-3 pt-1">
+
+      <!-- Карточка с подгруппами -->
+      <div class="liquid-card p-4 space-y-3">
+        <div class="flex items-center justify-between">
+          <span class="font-display text-sm font-bold text-white tracking-wide">08:15 — 09:50</span>
+          <span class="text-xs text-slate-400 px-2.5 py-0.5 rounded-full bg-white/5 border border-white/10">
+            1-я пара
+          </span>
+        </div>
+
+        <div class="h-[1px] bg-white/10"></div>
+
+        <!-- 1-я подгруппа -->
+        <div class="space-y-1">
+          <div class="flex items-center justify-between text-xs">
+            <span class="text-cyan-400 font-semibold text-[11px] bg-cyan-500/10 px-2.5 py-0.5 rounded-full border border-cyan-500/20">
+              1-я подгруппа
+            </span>
+            <span class="font-display font-bold text-sm text-white bg-white/10 px-2.5 py-0.5 rounded-lg border border-white/10">302</span>
+          </div>
+          <div class="font-display text-base font-bold text-white pt-0.5">Обществознание</div>
+          <div class="text-xs text-slate-400">Юнусова В.Р.</div>
+        </div>
+
+        <div class="h-[1px] bg-white/10"></div>
+
+        <!-- 2-я подгруппа -->
+        <div class="space-y-1">
+          <div class="flex items-center justify-between text-xs">
+            <span class="text-violet-400 font-semibold text-[11px] bg-violet-500/10 px-2.5 py-0.5 rounded-full border border-violet-500/20">
+              2-я подгруппа
+            </span>
+            <span class="font-display font-bold text-sm text-white bg-white/10 px-2.5 py-0.5 rounded-lg border border-white/10">301-н</span>
+          </div>
+          <div class="font-display text-base font-bold text-white pt-0.5">Электротехника</div>
+          <div class="text-xs text-slate-400">Сурков А.В.</div>
+        </div>
+      </div>
+
+      <!-- Карточка: общая пара -->
+      <div class="liquid-card p-4">
+        <div class="flex items-center justify-between gap-3">
+          <div class="flex flex-col flex-shrink-0 text-left min-w-[55px]">
+            <span class="font-display text-sm font-bold text-white leading-tight">12:05</span>
+            <span class="text-xs text-slate-400 leading-tight mt-0.5">13:40</span>
+          </div>
+
+          <div class="flex-1 min-w-0 px-2 text-left">
+            <div class="font-display text-base font-bold text-white leading-snug truncate">Организация ТО (Л)</div>
+            <div class="text-xs text-slate-400 truncate mt-0.5">Арсланова Г.И.</div>
+          </div>
+
+          <div class="flex flex-col flex-shrink-0 text-right min-w-[55px]">
+            <span class="font-display text-sm font-bold text-cyan-300 leading-tight bg-cyan-500/10 px-2.5 py-0.5 rounded-lg border border-cyan-500/25 text-center">105-н</span>
+            <span class="text-xs text-slate-400 leading-tight mt-1 text-center font-medium">3 пара</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <script>
+    if (window.lucide) lucide.createIcons();
+  </script>
+</body>
+</html>
