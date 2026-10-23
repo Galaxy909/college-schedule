@@ -14,6 +14,8 @@ const state = {
   selectedTeacherId: localStorage.getItem("my_schedule_teacher") || null,
   currentSchedule: null,
   selectedDayIndex: 0,
+  notificationsEnabled: localStorage.getItem("my_schedule_notif_enabled") === "true",
+  notifLeadMinutes: parseInt(localStorage.getItem("my_schedule_notif_lead") || "5", 10),
 };
 
 // Реальное расписание звонков колледжа
@@ -53,9 +55,9 @@ function cleanString(str) {
   return str.replace(/\r?\n|\r/g, " ").replace(/\s+/g, " ").trim();
 }
 
-// PWA Service Worker (v5)
+// PWA Service Worker (v6)
 if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("/static/sw.js").then((reg) => {
+  navigator.serviceWorker.register("/static/sw.js?v=6").then((reg) => {
     reg.update();
   }).catch(console.error);
 }
@@ -63,6 +65,7 @@ if ("serviceWorker" in navigator) {
 document.addEventListener("DOMContentLoaded", () => {
   initTheme();
   initModeUI();
+  initNotificationsUI();
   loadData();
   startLiveTimer();
 
@@ -690,6 +693,9 @@ function updateLiveStatusBar() {
     return;
   }
 
+  // Проверка пуш-уведомлений о скором начале пары (например, за 5 минут)
+  checkPairNotificationAlerts(todayData);
+
   let currentLessons = [];
   let nextLessons = [];
   let isBreak = false;
@@ -917,4 +923,294 @@ function resetDefaultBells() {
 function showLoader(show) {
   const loader = document.getElementById("schedule-loader");
   if (loader) loader.classList.toggle("hidden", !show);
+}
+
+// ─────────────────────────────────────────────
+// 11. Уведомления о начале пар (Web Notifications & PWA)
+// ─────────────────────────────────────────────
+
+const notifiedPairsToday = {};
+
+function initNotificationsUI() {
+  updateNotifUI();
+}
+
+function openNotificationsModal() {
+  const modal = document.getElementById("notif-modal");
+  if (!modal) return;
+  modal.classList.remove("hidden");
+  updateNotifUI();
+  if (window.lucide) lucide.createIcons();
+}
+
+function closeNotificationsModal() {
+  document.getElementById("notif-modal")?.classList.add("hidden");
+}
+
+function updateNotifUI() {
+  const isEnabled = state.notificationsEnabled && ("Notification" in window && Notification.permission === "granted");
+  const dot = document.getElementById("notif-dot");
+  const icon = document.getElementById("notif-icon");
+  const statusLabel = document.getElementById("notif-status-label");
+  const toggleBtn = document.getElementById("notif-toggle-btn");
+
+  if (dot) {
+    dot.classList.toggle("hidden", !isEnabled);
+  }
+
+  if (icon) {
+    if (isEnabled) {
+      icon.className = "w-4 h-4 text-emerald-500 animate-pulse";
+    } else {
+      icon.className = "w-4 h-4 text-violet-600 dark:text-violet-400";
+    }
+  }
+
+  if (statusLabel) {
+    if (!("Notification" in window)) {
+      statusLabel.textContent = "Не поддерживается браузером";
+      statusLabel.className = "text-[11px] text-rose-500 font-medium";
+    } else if (Notification.permission === "denied") {
+      statusLabel.textContent = "Заблокировано в браузере ⚠️";
+      statusLabel.className = "text-[11px] text-rose-500 font-medium";
+    } else if (isEnabled) {
+      statusLabel.textContent = `Включено (за ${state.notifLeadMinutes} мин до пары)`;
+      statusLabel.className = "text-[11px] text-emerald-600 dark:text-emerald-400 font-medium";
+    } else {
+      statusLabel.textContent = "Выключено";
+      statusLabel.className = "text-[11px] text-slate-500 dark:text-slate-400";
+    }
+  }
+
+  if (toggleBtn) {
+    if (isEnabled) {
+      toggleBtn.textContent = "Отключить";
+      toggleBtn.className = "px-4 py-1.5 rounded-xl font-bold text-xs bg-rose-500/15 hover:bg-rose-500/25 text-rose-600 dark:text-rose-400 border border-rose-500/30 transition-all";
+    } else {
+      toggleBtn.textContent = "Включить";
+      toggleBtn.className = "px-4 py-1.5 rounded-xl font-bold text-xs bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white shadow-md shadow-indigo-500/20 transition-all";
+    }
+  }
+
+  // Обновляем подсветку кнопок [3, 5, 10] минут
+  [3, 5, 10].forEach((mins) => {
+    const btn = document.getElementById(`lead-${mins}`);
+    if (btn) {
+      btn.classList.toggle("active", state.notifLeadMinutes === mins);
+    }
+  });
+
+  if (window.lucide) lucide.createIcons();
+}
+
+async function toggleNotificationsState() {
+  if (!("Notification" in window)) {
+    alert("К сожалению, этот браузер не поддерживает Push-уведомления.");
+    return;
+  }
+
+  if (state.notificationsEnabled && Notification.permission === "granted") {
+    state.notificationsEnabled = false;
+    localStorage.setItem("my_schedule_notif_enabled", "false");
+    updateNotifUI();
+    return;
+  }
+
+  if (Notification.permission === "denied") {
+    alert("Уведомления заблокированы сайтом!\n\nЧтобы включить:\n1. Нажми на значок настроек сайта возле URL\n2. Разреши уведомления\n3. Перезагрузи страницу");
+    return;
+  }
+
+  try {
+    const permission = await Notification.requestPermission();
+    if (permission === "granted") {
+      state.notificationsEnabled = true;
+      localStorage.setItem("my_schedule_notif_enabled", "true");
+      updateNotifUI();
+      sendSystemNotification(
+        "🔔 Уведомления успешно включены!",
+        `Мы предупредим тебя за ${state.notifLeadMinutes} минут до начала каждой пары!`,
+        "welcome-notif"
+      );
+    } else {
+      state.notificationsEnabled = false;
+      localStorage.setItem("my_schedule_notif_enabled", "false");
+      updateNotifUI();
+    }
+  } catch (err) {
+    console.error("Ошибка при запросе разрешения уведомлений:", err);
+  }
+}
+
+function setNotifLeadTime(mins) {
+  state.notifLeadMinutes = mins;
+  localStorage.setItem("my_schedule_notif_lead", String(mins));
+  updateNotifUI();
+}
+
+// Воспроизведение звука колокольчика через Web Audio API (кристально чистый стереозвук)
+function playNotificationChime() {
+  try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx = new AudioCtx();
+
+    const osc1 = ctx.createOscillator();
+    const gain1 = ctx.createGain();
+    osc1.type = "sine";
+    osc1.frequency.setValueAtTime(587.33, ctx.currentTime);
+    gain1.gain.setValueAtTime(0.25, ctx.currentTime);
+    gain1.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.45);
+    osc1.connect(gain1);
+    gain1.connect(ctx.destination);
+    osc1.start(ctx.currentTime);
+    osc1.stop(ctx.currentTime + 0.45);
+
+    const osc2 = ctx.createOscillator();
+    const gain2 = ctx.createGain();
+    osc2.type = "sine";
+    osc2.frequency.setValueAtTime(880, ctx.currentTime + 0.12);
+    gain2.gain.setValueAtTime(0.3, ctx.currentTime + 0.12);
+    gain2.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.7);
+    osc2.connect(gain2);
+    gain2.connect(ctx.destination);
+    osc2.start(ctx.currentTime + 0.12);
+    osc2.stop(ctx.currentTime + 0.7);
+  } catch (e) {
+    console.log("Audio chime error:", e);
+  }
+}
+
+async function sendSystemNotification(title, body, tag = "pair-alert") {
+  // Звук
+  playNotificationChime();
+
+  // Вибрация (для мобилок)
+  if ("vibrate" in navigator) {
+    try {
+      navigator.vibrate([200, 100, 200]);
+    } catch (_) {}
+  }
+
+  if (!("Notification" in window) || Notification.permission !== "granted") {
+    return;
+  }
+
+  // Через Service Worker
+  if ("serviceWorker" in navigator) {
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      if (reg && reg.showNotification) {
+        reg.showNotification(title, {
+          body: body,
+          icon: "/static/icon-192.png",
+          badge: "/static/icon-192.png",
+          tag: tag,
+          renotify: true,
+          vibrate: [200, 100, 200],
+          data: { url: window.location.href }
+        });
+        return;
+      }
+    } catch (e) {
+      console.warn("SW showNotification fallback:", e);
+    }
+  }
+
+  // Fallback
+  try {
+    new Notification(title, {
+      body: body,
+      icon: "/static/icon-192.png",
+      tag: tag
+    });
+  } catch (err) {
+    console.error("Notification creation error:", err);
+  }
+}
+
+function testNotificationAction() {
+  playNotificationChime();
+  if ("vibrate" in navigator) {
+    try { navigator.vibrate([200, 100, 200]); } catch (_) {}
+  }
+
+  if (!("Notification" in window)) {
+    alert("Этот браузер не поддерживает Notification API.");
+    return;
+  }
+
+  if (Notification.permission === "granted") {
+    sendSystemNotification(
+      "🔔 Проверка уведомлений!",
+      `Всё чётко работает! За ${state.notifLeadMinutes} мин до пары тебе прилетит такое же уведомление со звуком, кабинетом и предметом.`,
+      "test-alert"
+    );
+  } else if (Notification.permission === "denied") {
+    alert("Уведомления заблокированы сайтом! Разреши их в настройках браузера (значок замочка возле адреса).");
+  } else {
+    Notification.requestPermission().then((perm) => {
+      updateNotifUI();
+      if (perm === "granted") {
+        state.notificationsEnabled = true;
+        localStorage.setItem("my_schedule_notif_enabled", "true");
+        updateNotifUI();
+        sendSystemNotification(
+          "🔔 Уведомления включены!",
+          `Всё настроено! Ты будешь получать напоминания за ${state.notifLeadMinutes} минут до пары.`,
+          "test-alert"
+        );
+      }
+    });
+  }
+}
+
+function checkPairNotificationAlerts(todayData) {
+  if (!state.notificationsEnabled) return;
+  if (!("Notification" in window) || Notification.permission !== "granted") return;
+  if (!todayData || !todayData.lessons || todayData.lessons.length === 0) return;
+
+  const now = new Date();
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+  const currentSeconds = now.getSeconds();
+  const nowSec = currentMinutes * 60 + currentSeconds;
+
+  const dayStr = String(now.getDate()).padStart(2, "0");
+  const monthStr = String(now.getMonth() + 1).padStart(2, "0");
+  const dateKey = `${dayStr}.${monthStr}`;
+
+  for (const bell of BELL_SCHEDULE) {
+    const matching = todayData.lessons.filter((l) => l.number === bell.num);
+    if (matching.length === 0) continue;
+
+    const startSec = bell.start * 60;
+    const leadSec = state.notifLeadMinutes * 60;
+    const alertWindowSec = 60;
+
+    const notifKey = `${dateKey}_pair_${bell.num}_${bell.start}`;
+
+    // Если время попадает в окно за N минут до пары
+    if (nowSec >= (startSec - leadSec) && nowSec < (startSec - leadSec + alertWindowSec)) {
+      if (!notifiedPairsToday[notifKey]) {
+        notifiedPairsToday[notifKey] = true;
+
+        let subject = "";
+        let room = "";
+
+        if (state.currentMode === "teacher") {
+          subject = cleanString(matching[0].subject);
+          room = cleanString(matching[0].room);
+        } else {
+          subject = matching.map((l) => cleanString(l.subject)).join(" / ");
+          room = matching.map((l) => cleanString(l.room)).filter(Boolean).join(" / ");
+        }
+
+        const roomText = room ? ` (каб. ${room})` : "";
+        const title = `🔔 До ${bell.num}-й пары ${state.notifLeadMinutes} мин!`;
+        const body = `${subject}${roomText}. Начало в ${bell.startStr}. Пора выдвигаться!`;
+
+        sendSystemNotification(title, body, notifKey);
+      }
+    }
+  }
 }

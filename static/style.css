@@ -246,6 +246,25 @@ body {
   border: 1px solid var(--modal-border);
 }
 
+/* Кнопки времени упреждения в модалке уведомлений */
+.lead-btn {
+  background: var(--capsule-bg);
+  color: var(--text-secondary);
+  border-color: var(--capsule-border);
+}
+
+.lead-btn:hover {
+  color: var(--text-primary);
+  border-color: rgba(99, 102, 241, 0.5);
+}
+
+.lead-btn.active {
+  background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%);
+  color: #ffffff !important;
+  border-color: rgba(255, 255, 255, 0.3);
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+}
+
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }

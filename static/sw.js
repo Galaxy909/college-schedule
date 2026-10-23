@@ -1,15 +1,14 @@
 /**
- * sw.js — Service Worker с Network-First стратегией.
- * Обновления применяются МГНОВЕННО при наличии интернета,
- * а при отсутствии сети сайт загружается из кэша.
+ * sw.js — Service Worker с Network-First стратегией и поддержкой уведомлений.
+ * Версия v6: поддержка push-уведомлений о начале пар.
  */
 
-const CACHE_NAME = "schedule-v5";
+const CACHE_NAME = "schedule-v6";
 const STATIC_ASSETS = [
   "/static/index.html",
-  "/static/style.css?v=5",
-  "/static/app.js?v=5",
-  "/static/manifest.json?v=5",
+  "/static/style.css?v=6",
+  "/static/app.js?v=6",
+  "/static/manifest.json?v=6",
   "/static/icon-192.png",
   "/static/icon-512.png",
 ];
@@ -50,5 +49,22 @@ self.addEventListener("fetch", (event) => {
       .catch(() => {
         return caches.match(event.request);
       })
+  );
+});
+
+// Обработка клика по системному уведомлению: фокусируем вкладку или открываем сайт
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  event.waitUntil(
+    clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
+      for (const client of clientList) {
+        if (client.url && "focus" in client) {
+          return client.focus();
+        }
+      }
+      if (clients.openWindow) {
+        return clients.openWindow(event.notification.data?.url || "/");
+      }
+    })
   );
 });
