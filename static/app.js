@@ -1,13 +1,14 @@
 /**
  * app.js — Liquid Glass & visionOS (Жидкое стекло Apple)
- * Полноценная поддержка Групп и Преподавателей, неоновый прогресс-бар,
- * стеклянные карточки и живой статус.
+ * Полная поддержка закрепления Групп и Преподавателей,
+ * 100% идеальная адаптация под Светлую и Тёмную темы.
  */
 
 const state = {
   currentMode: localStorage.getItem("my_schedule_mode") || "group", // "group" | "teacher"
   allGroups: [],
   allTeachers: [],
+  pinnedGroups: JSON.parse(localStorage.getItem("my_pinned_groups") || "[]"),
   pinnedTeachers: JSON.parse(localStorage.getItem("my_pinned_teachers") || "[]"),
   selectedGroupId: localStorage.getItem("my_schedule_group") || null,
   selectedTeacherId: localStorage.getItem("my_schedule_teacher") || null,
@@ -52,7 +53,7 @@ function cleanString(str) {
   return str.replace(/\r?\n|\r/g, " ").replace(/\s+/g, " ").trim();
 }
 
-// PWA Service Worker (версия 4)
+// PWA Service Worker (v5)
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("/static/sw.js").then((reg) => {
     reg.update();
@@ -85,17 +86,16 @@ function initModeUI() {
   const isTeacher = state.currentMode === "teacher";
   const groupBtn = document.getElementById("mode-group-btn");
   const teacherBtn = document.getElementById("mode-teacher-btn");
-  const chipsContainer = document.getElementById("pinned-chips-container");
 
   if (isTeacher) {
-    groupBtn.className = "px-4 py-1.5 rounded-xl text-slate-400 hover:text-white transition-all";
+    groupBtn.className = "px-4 py-1.5 rounded-xl text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-all";
     teacherBtn.className = "px-4 py-1.5 rounded-xl font-bold text-white bg-gradient-to-r from-violet-600 to-indigo-600 shadow-lg shadow-indigo-500/30 transition-all";
-    if (chipsContainer) chipsContainer.classList.remove("hidden");
   } else {
     groupBtn.className = "px-4 py-1.5 rounded-xl font-bold text-white bg-gradient-to-r from-violet-600 to-indigo-600 shadow-lg shadow-indigo-500/30 transition-all";
-    teacherBtn.className = "px-4 py-1.5 rounded-xl text-slate-400 hover:text-white transition-all";
-    if (chipsContainer) chipsContainer.classList.add("hidden");
+    teacherBtn.className = "px-4 py-1.5 rounded-xl text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-all";
   }
+
+  renderPinnedChips();
 }
 
 function switchMode(newMode) {
@@ -103,7 +103,6 @@ function switchMode(newMode) {
   state.currentMode = newMode;
   localStorage.setItem("my_schedule_mode", newMode);
   initModeUI();
-  renderPinnedChips();
 
   document.getElementById("selector-dropdown-menu")?.classList.add("hidden");
   document.getElementById("selector-arrow")?.classList.remove("rotate-180");
@@ -111,6 +110,8 @@ function switchMode(newMode) {
   if (newMode === "group") {
     if (state.selectedGroupId) {
       selectGroup(state.selectedGroupId);
+    } else if (state.pinnedGroups.length > 0) {
+      selectGroup(state.pinnedGroups[0]);
     } else if (state.allGroups.length > 0) {
       selectGroup(state.allGroups[0].id);
     }
@@ -126,7 +127,7 @@ function switchMode(newMode) {
 }
 
 // ─────────────────────────────────────────────
-// 2. Загрузка списков групп и преподавателей
+// 2. Загрузка данных
 // ─────────────────────────────────────────────
 async function loadData() {
   try {
@@ -151,6 +152,8 @@ async function loadData() {
     } else {
       if (state.selectedGroupId) {
         selectGroup(state.selectedGroupId);
+      } else if (state.pinnedGroups.length > 0) {
+        selectGroup(state.pinnedGroups[0]);
       } else if (state.allGroups.length > 0) {
         selectGroup(state.allGroups[0].id);
       }
@@ -161,7 +164,7 @@ async function loadData() {
 }
 
 // ─────────────────────────────────────────────
-// 3. Выпадающее меню выбора
+// 3. Выпадающее меню выбора (Группы / Преподаватели)
 // ─────────────────────────────────────────────
 function toggleSelectorDropdown() {
   const menu = document.getElementById("selector-dropdown-menu");
@@ -174,7 +177,7 @@ function toggleSelectorDropdown() {
     const input = document.getElementById("selector-dropdown-search");
     if (input) {
       input.value = "";
-      input.placeholder = state.currentMode === "teacher" ? "Поиск преподавателя..." : "Поиск группы...";
+      input.placeholder = state.currentMode === "teacher" ? "Поиск преподавателя..." : "Поиск группы (напр. 911)...";
       renderDropdownItems();
       input.focus();
     }
@@ -197,35 +200,50 @@ function renderDropdownItems() {
   if (state.currentMode === "group") {
     const filtered = state.allGroups.filter((g) => g.name.toLowerCase().includes(q));
     if (filtered.length === 0) {
-      container.innerHTML = `<div class="p-4 text-xs text-slate-400 text-center">Группы не найдены</div>`;
+      container.innerHTML = `<div class="p-4 text-xs text-slate-500 dark:text-slate-400 text-center">Группы не найдены</div>`;
       return;
     }
 
-    filtered.forEach((g) => {
-      const item = document.createElement("button");
+    // Закрепленные группы выводим первыми
+    const sorted = [...filtered].sort((a, b) => {
+      const aPinned = state.pinnedGroups.includes(a.id) ? 1 : 0;
+      const bPinned = state.pinnedGroups.includes(b.id) ? 1 : 0;
+      return bPinned - aPinned;
+    });
+
+    sorted.forEach((g) => {
+      const item = document.createElement("div");
       const isSelected = g.id === state.selectedGroupId;
-      item.className = `w-full text-left px-3.5 py-2.5 rounded-2xl text-xs font-semibold flex items-center justify-between transition-all ${
+      const isPinned = state.pinnedGroups.includes(g.id);
+
+      item.className = `w-full px-3 py-2.5 rounded-2xl text-xs font-semibold flex items-center justify-between transition-all cursor-pointer ${
         isSelected
-          ? "bg-gradient-to-r from-violet-600/30 to-indigo-600/30 text-white font-bold border border-violet-500/40"
-          : "text-slate-300 hover:bg-white/10"
+          ? "bg-violet-100 dark:bg-gradient-to-r dark:from-violet-600/30 dark:to-indigo-600/30 text-violet-800 dark:text-white font-bold border border-violet-300 dark:border-violet-500/40"
+          : "text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/10"
       }`;
+
       item.innerHTML = `
-        <span class="font-display text-sm tracking-tight">Группа ${g.name}</span>
-        ${isSelected ? `<i data-lucide="check" class="w-4 h-4 text-cyan-400"></i>` : ""}
+        <div class="flex-1 truncate pr-2" onclick="handleGroupClick('${g.id}')">
+          <span class="font-display text-sm tracking-tight">Группа ${g.name}</span>
+        </div>
+        <div class="flex items-center gap-1.5">
+          <button onclick="handleGroupPinToggle('${g.id}', event)" title="${isPinned ? 'Открепить группу' : 'Закрепить группу'}"
+            class="star-btn ${isPinned ? 'pinned' : ''}">
+            <i data-lucide="star" class="w-4 h-4 ${isPinned ? 'fill-amber-400 text-amber-400' : 'text-slate-400'}"></i>
+          </button>
+          ${isSelected ? `<i data-lucide="check" class="w-4 h-4 text-sky-600 dark:text-cyan-400"></i>` : ""}
+        </div>
       `;
-      item.onclick = () => {
-        selectGroup(g.id);
-        toggleSelectorDropdown();
-      };
       container.appendChild(item);
     });
   } else {
     const filtered = state.allTeachers.filter((t) => t.name.toLowerCase().includes(q));
     if (filtered.length === 0) {
-      container.innerHTML = `<div class="p-4 text-xs text-slate-400 text-center">Преподаватели не найдены</div>`;
+      container.innerHTML = `<div class="p-4 text-xs text-slate-500 dark:text-slate-400 text-center">Преподаватели не найдены</div>`;
       return;
     }
 
+    // Закрепленные преподаватели выводим первыми
     const sorted = [...filtered].sort((a, b) => {
       const aPinned = state.pinnedTeachers.includes(a.id) ? 1 : 0;
       const bPinned = state.pinnedTeachers.includes(b.id) ? 1 : 0;
@@ -237,10 +255,10 @@ function renderDropdownItems() {
       const isSelected = t.id === state.selectedTeacherId;
       const isPinned = state.pinnedTeachers.includes(t.id);
 
-      item.className = `w-full px-3 py-2 rounded-2xl text-xs font-semibold flex items-center justify-between transition-all cursor-pointer ${
+      item.className = `w-full px-3 py-2.5 rounded-2xl text-xs font-semibold flex items-center justify-between transition-all cursor-pointer ${
         isSelected
-          ? "bg-gradient-to-r from-violet-600/30 to-indigo-600/30 text-white font-bold border border-violet-500/40"
-          : "text-slate-300 hover:bg-white/10"
+          ? "bg-violet-100 dark:bg-gradient-to-r dark:from-violet-600/30 dark:to-indigo-600/30 text-violet-800 dark:text-white font-bold border border-violet-300 dark:border-violet-500/40"
+          : "text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/10"
       }`;
 
       item.innerHTML = `
@@ -248,14 +266,13 @@ function renderDropdownItems() {
           <span class="font-display text-sm tracking-tight">${t.name}</span>
         </div>
         <div class="flex items-center gap-1.5">
-          <button onclick="handlePinToggle('${t.id}', event)" title="${isPinned ? 'Открепить' : 'Закрепить'}"
+          <button onclick="handleTeacherPinToggle('${t.id}', event)" title="${isPinned ? 'Открепить преподавателя' : 'Закрепить преподавателя'}"
             class="star-btn ${isPinned ? 'pinned' : ''}">
             <i data-lucide="star" class="w-4 h-4 ${isPinned ? 'fill-amber-400 text-amber-400' : 'text-slate-400'}"></i>
           </button>
-          ${isSelected ? `<i data-lucide="check" class="w-4 h-4 text-cyan-400"></i>` : ""}
+          ${isSelected ? `<i data-lucide="check" class="w-4 h-4 text-sky-600 dark:text-cyan-400"></i>` : ""}
         </div>
       `;
-
       container.appendChild(item);
     });
   }
@@ -263,20 +280,42 @@ function renderDropdownItems() {
   if (window.lucide) lucide.createIcons();
 }
 
+function handleGroupClick(groupId) {
+  selectGroup(groupId);
+  toggleSelectorDropdown();
+}
+
 function handleTeacherClick(teacherId) {
   selectTeacher(teacherId);
   toggleSelectorDropdown();
 }
 
-function handlePinToggle(teacherId, event) {
+function handleGroupPinToggle(groupId, event) {
+  event.stopPropagation();
+  togglePinGroup(groupId);
+  renderDropdownItems();
+}
+
+function handleTeacherPinToggle(teacherId, event) {
   event.stopPropagation();
   togglePinTeacher(teacherId);
   renderDropdownItems();
 }
 
 // ─────────────────────────────────────────────
-// 4. Закрепление преподавателей (Быстрый доступ)
+// 4. Закрепление Групп и Преподавателей
 // ─────────────────────────────────────────────
+function togglePinGroup(groupId) {
+  const index = state.pinnedGroups.indexOf(groupId);
+  if (index > -1) {
+    state.pinnedGroups.splice(index, 1);
+  } else {
+    state.pinnedGroups.push(groupId);
+  }
+  localStorage.setItem("my_pinned_groups", JSON.stringify(state.pinnedGroups));
+  renderPinnedChips();
+}
+
 function togglePinTeacher(teacherId) {
   const index = state.pinnedTeachers.indexOf(teacherId);
   if (index > -1) {
@@ -293,7 +332,10 @@ function renderPinnedChips() {
   const list = document.getElementById("pinned-chips-list");
   if (!container || !list) return;
 
-  if (state.currentMode !== "teacher" || state.pinnedTeachers.length === 0) {
+  const isTeacher = state.currentMode === "teacher";
+  const items = isTeacher ? state.pinnedTeachers : state.pinnedGroups;
+
+  if (items.length === 0) {
     container.classList.add("hidden");
     return;
   }
@@ -301,20 +343,37 @@ function renderPinnedChips() {
   container.classList.remove("hidden");
   list.innerHTML = "";
 
-  state.pinnedTeachers.forEach((id) => {
-    const teacher = state.allTeachers.find((t) => t.id === id);
-    if (!teacher) return;
+  if (isTeacher) {
+    state.pinnedTeachers.forEach((id) => {
+      const teacher = state.allTeachers.find((t) => t.id === id);
+      if (!teacher) return;
 
-    const isActive = id === state.selectedTeacherId;
-    const btn = document.createElement("button");
-    btn.className = `chip-btn ${isActive ? "active" : ""}`;
-    btn.innerHTML = `
-      <i data-lucide="star" class="w-3.5 h-3.5 ${isActive ? 'fill-white text-white' : 'fill-amber-400 text-amber-400'}"></i>
-      <span class="font-display tracking-tight">${teacher.name}</span>
-    `;
-    btn.onclick = () => selectTeacher(id);
-    list.appendChild(btn);
-  });
+      const isActive = id === state.selectedTeacherId;
+      const btn = document.createElement("button");
+      btn.className = `chip-btn ${isActive ? "active" : ""}`;
+      btn.innerHTML = `
+        <i data-lucide="star" class="w-3.5 h-3.5 ${isActive ? 'fill-white text-white' : 'fill-amber-400 text-amber-400'}"></i>
+        <span class="font-display tracking-tight">${teacher.name}</span>
+      `;
+      btn.onclick = () => selectTeacher(id);
+      list.appendChild(btn);
+    });
+  } else {
+    state.pinnedGroups.forEach((id) => {
+      const group = state.allGroups.find((g) => g.id === id);
+      if (!group) return;
+
+      const isActive = id === state.selectedGroupId;
+      const btn = document.createElement("button");
+      btn.className = `chip-btn ${isActive ? "active" : ""}`;
+      btn.innerHTML = `
+        <i data-lucide="star" class="w-3.5 h-3.5 ${isActive ? 'fill-white text-white' : 'fill-amber-400 text-amber-400'}"></i>
+        <span class="font-display tracking-tight">Группа ${group.name}</span>
+      `;
+      btn.onclick = () => selectGroup(id);
+      list.appendChild(btn);
+    });
+  }
 
   if (window.lucide) lucide.createIcons();
 }
@@ -325,6 +384,7 @@ function renderPinnedChips() {
 async function selectGroup(groupId) {
   state.selectedGroupId = groupId;
   localStorage.setItem("my_schedule_group", groupId);
+  renderPinnedChips();
 
   const group = state.allGroups.find((g) => g.id === groupId);
   const nameEl = document.getElementById("selected-item-name");
@@ -349,7 +409,7 @@ async function selectGroup(groupId) {
   } catch (err) {
     console.error(err);
     document.getElementById("day-schedule-content").innerHTML =
-      `<div class="p-6 text-center text-xs text-red-400">Ошибка при получении расписания</div>`;
+      `<div class="p-6 text-center text-xs text-red-500 font-medium">Ошибка при получении расписания</div>`;
   } finally {
     showLoader(false);
   }
@@ -383,7 +443,7 @@ async function selectTeacher(teacherId) {
   } catch (err) {
     console.error(err);
     document.getElementById("day-schedule-content").innerHTML =
-      `<div class="p-6 text-center text-xs text-red-400">Ошибка при получении расписания</div>`;
+      `<div class="p-6 text-center text-xs text-red-500 font-medium">Ошибка при получении расписания</div>`;
   } finally {
     showLoader(false);
   }
@@ -420,9 +480,9 @@ function renderDaysRibbon() {
     const isActive = idx === state.selectedDayIndex;
     pill.className = `day-pill ${isActive ? "active" : ""}`;
     pill.innerHTML = `
-      <span class="text-[10px] uppercase font-bold text-slate-400">${weekday}</span>
-      <span class="font-display text-base font-bold text-white">${dayNumber}</span>
-      <span class="w-1.5 h-1.5 rounded-full ${day.lessons.length > 0 ? (isActive ? "bg-cyan-300" : "bg-cyan-400/80") : "bg-transparent"} mt-0.5"></span>
+      <span class="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400">${weekday}</span>
+      <span class="font-display text-base font-bold text-slate-900 dark:text-white">${dayNumber}</span>
+      <span class="w-1.5 h-1.5 rounded-full ${day.lessons.length > 0 ? (isActive ? "bg-cyan-300" : "bg-sky-500 dark:bg-cyan-400/80") : "bg-transparent"} mt-0.5"></span>
     `;
 
     pill.onclick = () => {
@@ -436,7 +496,7 @@ function renderDaysRibbon() {
 }
 
 // ─────────────────────────────────────────────
-// 7. Карточки пар (Liquid Glass)
+// 7. Карточки пар (Liquid Glass с высокой контрастностью)
 // ─────────────────────────────────────────────
 function renderDaySchedule() {
   updateLiveStatusBar();
@@ -445,7 +505,7 @@ function renderDaySchedule() {
   container.innerHTML = "";
 
   if (!state.currentSchedule || !state.currentSchedule.days || !state.currentSchedule.days[state.selectedDayIndex]) {
-    container.innerHTML = `<div class="p-8 text-center text-xs text-slate-400">Нет данных о занятиях</div>`;
+    container.innerHTML = `<div class="p-8 text-center text-xs text-slate-500 dark:text-slate-400">Нет данных о занятиях</div>`;
     return;
   }
 
@@ -484,18 +544,18 @@ function renderDaySchedule() {
       card.innerHTML = `
         <div class="flex items-center justify-between gap-3">
           <div class="flex flex-col flex-shrink-0 text-left min-w-[55px]">
-            <span class="font-display text-sm font-bold text-white leading-tight">${startStr || "—"}</span>
-            <span class="text-xs text-slate-400 leading-tight mt-0.5">${endStr}</span>
+            <span class="font-display text-sm font-bold text-slate-900 dark:text-white leading-tight">${startStr || "—"}</span>
+            <span class="text-xs text-slate-500 dark:text-slate-400 leading-tight mt-0.5">${endStr}</span>
           </div>
 
           <div class="flex-1 min-w-0 px-2 text-left">
-            <div class="font-display text-base font-bold text-white leading-snug truncate">${subj}</div>
-            ${group ? `<div class="text-xs font-semibold text-cyan-300 truncate mt-0.5">Группа ${group}</div>` : ""}
+            <div class="font-display text-base font-bold text-slate-900 dark:text-white leading-snug truncate">${subj}</div>
+            ${group ? `<div class="text-xs font-semibold text-sky-700 dark:text-cyan-300 truncate mt-0.5">Группа ${group}</div>` : ""}
           </div>
 
           <div class="flex flex-col flex-shrink-0 text-right min-w-[55px]">
-            <span class="font-display text-sm font-bold text-cyan-300 leading-tight bg-cyan-500/10 px-2.5 py-0.5 rounded-lg border border-cyan-500/25 text-center">${room || "—"}</span>
-            <span class="text-xs text-slate-400 leading-tight mt-1 text-center font-medium">${num} пара</span>
+            <span class="font-display text-sm font-bold text-sky-800 dark:text-cyan-300 leading-tight bg-sky-100/90 dark:bg-cyan-500/10 px-2.5 py-0.5 rounded-lg border border-sky-300/80 dark:border-cyan-500/25 text-center">${room || "—"}</span>
+            <span class="text-xs text-slate-500 dark:text-slate-400 leading-tight mt-1 text-center font-medium">${num} пара</span>
           </div>
         </div>
       `;
@@ -513,18 +573,18 @@ function renderDaySchedule() {
         card.innerHTML = `
           <div class="flex items-center justify-between gap-3">
             <div class="flex flex-col flex-shrink-0 text-left min-w-[55px]">
-              <span class="font-display text-sm font-bold text-white leading-tight">${startStr || "—"}</span>
-              <span class="text-xs text-slate-400 leading-tight mt-0.5">${endStr}</span>
+              <span class="font-display text-sm font-bold text-slate-900 dark:text-white leading-tight">${startStr || "—"}</span>
+              <span class="text-xs text-slate-500 dark:text-slate-400 leading-tight mt-0.5">${endStr}</span>
             </div>
 
             <div class="flex-1 min-w-0 px-2 text-left">
-              <div class="font-display text-base font-bold text-white leading-snug truncate">${subj}</div>
-              ${teacher ? `<div class="text-xs text-slate-400 truncate mt-0.5 font-medium">${teacher}</div>` : ""}
+              <div class="font-display text-base font-bold text-slate-900 dark:text-white leading-snug truncate">${subj}</div>
+              ${teacher ? `<div class="text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5 font-medium">${teacher}</div>` : ""}
             </div>
 
             <div class="flex flex-col flex-shrink-0 text-right min-w-[55px]">
-              <span class="font-display text-sm font-bold text-cyan-300 leading-tight bg-cyan-500/10 px-2.5 py-0.5 rounded-lg border border-cyan-500/25 text-center">${room || "—"}</span>
-              <span class="text-xs text-slate-400 leading-tight mt-1 text-center font-medium">${num} пара</span>
+              <span class="font-display text-sm font-bold text-sky-800 dark:text-cyan-300 leading-tight bg-sky-100/90 dark:bg-cyan-500/10 px-2.5 py-0.5 rounded-lg border border-sky-300/80 dark:border-cyan-500/25 text-center">${room || "—"}</span>
+              <span class="text-xs text-slate-500 dark:text-slate-400 leading-tight mt-1 text-center font-medium">${num} пара</span>
             </div>
           </div>
         `;
@@ -541,8 +601,8 @@ function renderDaySchedule() {
           const subTitle = l.subgroup > 0 ? `${l.subgroup}-я подгруппа` : "Вся группа";
           
           const badgeClass = isSub1 
-            ? "text-cyan-400 bg-cyan-500/10 border-cyan-500/20" 
-            : "text-violet-400 bg-violet-500/10 border-violet-500/20";
+            ? "text-sky-800 bg-sky-100 border-sky-300 dark:text-cyan-400 dark:bg-cyan-500/10 dark:border-cyan-500/20" 
+            : "text-purple-800 bg-purple-100 border-purple-300 dark:text-violet-400 dark:bg-violet-500/10 dark:border-violet-500/20";
 
           const divider = index > 0 ? `<div class="card-divider"></div>` : "";
 
@@ -551,10 +611,10 @@ function renderDaySchedule() {
             <div class="space-y-1 text-left">
               <div class="flex items-center justify-between text-xs">
                 <span class="${badgeClass} font-semibold text-[11px] px-2.5 py-0.5 rounded-full border">${subTitle}</span>
-                <span class="font-display font-bold text-sm text-white bg-white/10 px-2.5 py-0.5 rounded-lg border border-white/10">${room}</span>
+                <span class="font-display font-bold text-sm text-slate-800 dark:text-white bg-slate-100 dark:bg-white/10 px-2.5 py-0.5 rounded-lg border border-slate-200 dark:border-white/10">${room}</span>
               </div>
-              <div class="font-display text-base font-bold text-white pt-0.5 leading-snug">${subj}</div>
-              ${teacher ? `<div class="text-xs text-slate-400 font-medium">${teacher}</div>` : ""}
+              <div class="font-display text-base font-bold text-slate-900 dark:text-white pt-0.5 leading-snug">${subj}</div>
+              ${teacher ? `<div class="text-xs text-slate-500 dark:text-slate-400 font-medium">${teacher}</div>` : ""}
             </div>
           `;
         });
@@ -562,8 +622,8 @@ function renderDaySchedule() {
         card.innerHTML = `
           <div class="space-y-3">
             <div class="flex items-center justify-between">
-              <span class="font-display text-sm font-bold text-white tracking-wide">${timeStr}</span>
-              <span class="text-xs text-slate-300 px-2.5 py-0.5 rounded-full bg-white/5 border border-white/10">${num}-я пара</span>
+              <span class="font-display text-sm font-bold text-slate-900 dark:text-white tracking-wide">${timeStr}</span>
+              <span class="text-xs text-slate-600 dark:text-slate-300 px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10">${num}-я пара</span>
             </div>
 
             <div class="card-divider"></div>
@@ -577,7 +637,7 @@ function renderDaySchedule() {
   });
 
   const header = document.createElement("div");
-  header.className = "flex items-center justify-between text-xs font-bold text-slate-400 px-1 pt-1 pb-1";
+  header.className = "flex items-center justify-between text-xs font-bold text-slate-500 dark:text-slate-400 px-1 pt-1 pb-1";
   header.innerHTML = `
     <span>${currentDay.day_info}</span>
     <span>${pairNumbers.length} пар</span>
@@ -588,8 +648,8 @@ function renderDaySchedule() {
     const empty = document.createElement("div");
     empty.className = "py-14 text-center text-xs text-slate-400 space-y-1.5";
     empty.innerHTML = `
-      <p class="font-display text-lg font-bold text-slate-200">Пар нет 🎉</p>
-      <p>На этот день занятий не запланировано</p>
+      <p class="font-display text-lg font-bold text-slate-700 dark:text-slate-200">Пар нет 🎉</p>
+      <p class="text-slate-500 dark:text-slate-400">На этот день занятий не запланировано</p>
     `;
     container.appendChild(empty);
   } else {
@@ -699,36 +759,36 @@ function updateLiveStatusBar() {
     bar.innerHTML = `
       <div class="flex items-center justify-between text-xs">
         <div class="flex items-center gap-2">
-          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
-          <span class="font-bold text-emerald-400 uppercase tracking-wider text-[11px]">Идёт ${activePairNum} пара</span>
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+          <span class="font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider text-[11px]">Идёт ${activePairNum} пара</span>
         </div>
-        <span class="font-display font-bold text-xs text-white bg-white/10 px-3 py-1 rounded-full border border-white/10">
+        <span class="font-display font-bold text-xs text-slate-900 dark:text-white bg-slate-100/90 dark:bg-white/10 px-3 py-1 rounded-full border border-slate-200 dark:border-white/10">
           Осталось ${mins}м ${secs < 10 ? "0" : ""}${secs}с
         </span>
       </div>
 
       <div class="flex items-center justify-between gap-3 pt-0.5">
         <div class="space-y-0.5 min-w-0 flex-1">
-          <h2 class="font-display text-lg font-bold text-white tracking-tight leading-tight truncate">
+          <h2 class="font-display text-lg font-bold text-slate-900 dark:text-white tracking-tight leading-tight truncate">
             ${subjectTitle}
           </h2>
-          ${personOrGroup ? `<div class="text-xs text-slate-300 truncate">${personOrGroup}</div>` : ""}
+          ${personOrGroup ? `<div class="text-xs text-slate-600 dark:text-slate-300 truncate">${personOrGroup}</div>` : ""}
         </div>
 
-        <div class="flex flex-col items-center justify-center px-3.5 py-2 rounded-2xl bg-white/5 border border-white/15 flex-shrink-0">
-          <span class="text-[9px] text-slate-400 uppercase tracking-widest font-semibold">Кабинет</span>
-          <span class="font-display text-lg font-bold text-cyan-300">${roomTitle}</span>
+        <div class="flex flex-col items-center justify-center px-3.5 py-2 rounded-2xl bg-slate-100/80 dark:bg-white/5 border border-slate-200 dark:border-white/15 flex-shrink-0">
+          <span class="text-[9px] text-slate-500 dark:text-slate-400 uppercase tracking-widest font-semibold">Кабинет</span>
+          <span class="font-display text-lg font-bold text-sky-700 dark:text-cyan-300">${roomTitle}</span>
         </div>
       </div>
 
-      <!-- Неоновый градиентный прогресс-бар -->
+      <!-- Градиентный прогресс-бар -->
       <div class="space-y-1.5 pt-1">
-        <div class="w-full h-2 bg-slate-900/60 rounded-full overflow-hidden border border-white/10 p-0.5">
-          <div class="h-full bg-gradient-to-r from-violet-500 via-indigo-400 to-cyan-400 rounded-full shadow-lg shadow-cyan-500/50 transition-all duration-1000" style="width: ${progressPercent.toFixed(1)}%;"></div>
+        <div class="w-full h-2 bg-slate-200 dark:bg-slate-900/60 rounded-full overflow-hidden border border-slate-300 dark:border-white/10 p-0.5">
+          <div class="h-full bg-gradient-to-r from-violet-500 via-indigo-400 to-cyan-400 rounded-full shadow-lg shadow-cyan-500/40 transition-all duration-1000" style="width: ${progressPercent.toFixed(1)}%;"></div>
         </div>
-        <div class="flex justify-between text-[10px] text-slate-400 font-medium font-display">
+        <div class="flex justify-between text-[10px] text-slate-500 dark:text-slate-400 font-medium font-display">
           <span>${activeBell.startStr}</span>
-          <span class="text-cyan-300 font-semibold">${Math.round(progressPercent)}% пройдено</span>
+          <span class="text-sky-700 dark:text-cyan-300 font-semibold">${Math.round(progressPercent)}% пройдено</span>
           <span>${activeBell.endStr}</span>
         </div>
       </div>
@@ -748,16 +808,16 @@ function updateLiveStatusBar() {
     bar.innerHTML = `
       <div class="flex items-center justify-between text-xs">
         <div class="flex items-center gap-2">
-          <span class="w-2 h-2 rounded-full bg-amber-400"></span>
-          <span class="font-bold text-amber-400 uppercase tracking-wider text-[11px]">Перемена</span>
+          <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+          <span class="font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider text-[11px]">Перемена</span>
         </div>
-        <span class="font-display font-bold text-xs text-white bg-white/10 px-3 py-1 rounded-full border border-white/10">
+        <span class="font-display font-bold text-xs text-slate-900 dark:text-white bg-slate-100/90 dark:bg-white/10 px-3 py-1 rounded-full border border-slate-200 dark:border-white/10">
           До звонка ${mins}м ${secs < 10 ? "0" : ""}${secs}с
         </span>
       </div>
 
       <div class="pt-0.5">
-        <div class="text-xs text-slate-300">Скоро <span class="font-bold text-white">${activePairNum} пара:</span> ${nextTitle}</div>
+        <div class="text-xs text-slate-600 dark:text-slate-300">Скоро <span class="font-bold text-slate-900 dark:text-white">${activePairNum} пара:</span> ${nextTitle}</div>
       </div>
     `;
   } else {
@@ -804,15 +864,15 @@ function openBellSettings() {
 
   BELL_SCHEDULE.forEach((b) => {
     const row = document.createElement("div");
-    row.className = "flex items-center justify-between gap-2 p-2.5 rounded-2xl bg-white/5 border border-white/10 text-xs";
+    row.className = "flex items-center justify-between gap-2 p-2.5 rounded-2xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-xs";
     row.innerHTML = `
-      <span class="font-display font-bold text-white w-14">№${b.num} пара</span>
+      <span class="font-display font-bold text-slate-800 dark:text-white w-14">№${b.num} пара</span>
       <div class="flex items-center gap-1.5 flex-1 justify-end font-mono">
         <input type="time" id="bell-start-${b.num}" value="${b.startStr}"
-          class="px-2.5 py-1.5 rounded-xl bg-white/10 border border-white/15 text-white font-mono text-center focus:outline-none focus:border-cyan-400" />
+          class="px-2.5 py-1.5 rounded-xl bg-white dark:bg-white/10 border border-slate-300 dark:border-white/15 text-slate-900 dark:text-white font-mono text-center focus:outline-none focus:border-cyan-400" />
         <span class="text-slate-400">–</span>
         <input type="time" id="bell-end-${b.num}" value="${b.endStr}"
-          class="px-2.5 py-1.5 rounded-xl bg-white/10 border border-white/15 text-white font-mono text-center focus:outline-none focus:border-cyan-400" />
+          class="px-2.5 py-1.5 rounded-xl bg-white dark:bg-white/10 border border-slate-300 dark:border-white/15 text-slate-900 dark:text-white font-mono text-center focus:outline-none focus:border-cyan-400" />
       </div>
     `;
     container.appendChild(row);

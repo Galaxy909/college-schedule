@@ -1,4 +1,4 @@
-/* style.css — Liquid Glass & visionOS (Жидкое стекло Apple) */
+/* style.css — Liquid Glass & visionOS (Жидкое стекло Apple) с поддержкой тёмной и светлой тем */
 
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700;800&display=swap');
 
@@ -19,6 +19,8 @@
   --capsule-border: rgba(255, 255, 255, 0.18);
   
   --divider-color: rgba(255, 255, 255, 0.08);
+  --modal-bg: rgba(15, 18, 35, 0.92);
+  --modal-border: rgba(255, 255, 255, 0.16);
   
   --accent-cyan: #22d3ee;
   --accent-violet: #a855f7;
@@ -26,18 +28,25 @@
 }
 
 [data-theme="light"] {
-  --bg-page: #f1f5f9;
+  --bg-page: #f8fafc;
   --text-primary: #0f172a;
   --text-secondary: #475569;
-  --text-muted: #94a3b8;
+  --text-muted: #64748b;
   
-  --glass-card: rgba(255, 255, 255, 0.75);
-  --glass-card-border: rgba(0, 0, 0, 0.08);
-  --glass-card-hover-border: rgba(99, 102, 241, 0.4);
+  --glass-card: rgba(255, 255, 255, 0.88);
+  --glass-card-border: rgba(148, 163, 184, 0.25);
+  --glass-card-hover-border: rgba(99, 102, 241, 0.5);
   
-  --capsule-bg: rgba(255, 255, 255, 0.9);
-  --capsule-border: rgba(0, 0, 0, 0.1);
-  --divider-color: rgba(0, 0, 0, 0.06);
+  --capsule-bg: rgba(255, 255, 255, 0.95);
+  --capsule-border: rgba(148, 163, 184, 0.25);
+  
+  --divider-color: rgba(148, 163, 184, 0.2);
+  --modal-bg: rgba(255, 255, 255, 0.98);
+  --modal-border: rgba(148, 163, 184, 0.35);
+  
+  --accent-cyan: #0284c7;
+  --accent-violet: #7c3aed;
+  --accent-indigo: #4f46e5;
 }
 
 body {
@@ -49,6 +58,7 @@ body {
   -webkit-tap-highlight-color: transparent;
   position: relative;
   overflow-x: hidden;
+  transition: background-color 0.25s ease, color 0.25s ease;
 }
 
 .font-display {
@@ -64,6 +74,7 @@ body {
   overflow: hidden;
   pointer-events: none;
   z-index: 0;
+  transition: opacity 0.3s ease;
 }
 
 .aurora-1 {
@@ -86,6 +97,14 @@ body {
   filter: blur(70px);
 }
 
+[data-theme="light"] .aurora-1 {
+  background: radial-gradient(circle, rgba(167, 139, 250, 0.16) 0%, transparent 70%);
+}
+
+[data-theme="light"] .aurora-2 {
+  background: radial-gradient(circle, rgba(56, 189, 248, 0.14) 0%, transparent 70%);
+}
+
 /* ═══════════════════════════════════════
    2. СТЕКЛЯННЫЕ КАРТОЧКИ (LIQUID GLASS)
 ═══════════════════════════════════════ */
@@ -95,8 +114,12 @@ body {
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid var(--glass-card-border);
   border-radius: 22px;
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.35);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.25);
   transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+[data-theme="light"] .liquid-card {
+  box-shadow: 0 6px 24px -2px rgba(15, 23, 42, 0.08);
 }
 
 .liquid-card:hover {
@@ -105,13 +128,21 @@ body {
   box-shadow: 0 14px 40px -4px rgba(124, 58, 237, 0.25);
 }
 
+[data-theme="light"] .liquid-card:hover {
+  box-shadow: 0 10px 30px -4px rgba(99, 102, 241, 0.2);
+}
+
 /* Парящая капсула (visionOS Capsule) */
 .vision-capsule {
   background: var(--capsule-bg);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
   border: 1px solid var(--capsule-border);
-  box-shadow: 0 8px 32px -4px rgba(0, 0, 0, 0.4), inset 0 1px 1px 0 rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 32px -4px rgba(0, 0, 0, 0.3), inset 0 1px 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+[data-theme="light"] .vision-capsule {
+  box-shadow: 0 6px 24px -4px rgba(15, 23, 42, 0.07), inset 0 1px 1px 0 rgba(255, 255, 255, 0.8);
 }
 
 /* Разделительная линия */
@@ -143,7 +174,7 @@ body {
 }
 
 .day-pill:hover {
-  border-color: rgba(255, 255, 255, 0.3);
+  border-color: rgba(99, 102, 241, 0.4);
   transform: translateY(-1px);
 }
 
@@ -160,7 +191,7 @@ body {
 }
 
 /* ═══════════════════════════════════════
-   4. ЧИПЫ ЗАКРЕПЛЕННЫХ ПРЕПОДАВАТЕЛЕЙ
+   4. ЧИПЫ ЗАКРЕПЛЕННЫХ ЭЛЕМЕНТОВ
 ═══════════════════════════════════════ */
 .chip-btn {
   display: inline-flex;
@@ -180,15 +211,20 @@ body {
 }
 
 .chip-btn:hover {
-  border-color: rgba(255, 255, 255, 0.3);
-  color: #ffffff;
+  border-color: rgba(99, 102, 241, 0.5);
+  color: var(--text-primary);
 }
 
 .chip-btn.active {
   background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%);
   border-color: rgba(255, 255, 255, 0.3);
-  color: #ffffff;
+  color: #ffffff !important;
   box-shadow: 0 4px 16px rgba(124, 58, 237, 0.35);
+}
+
+.chip-btn.active span,
+.chip-btn.active i {
+  color: #ffffff !important;
 }
 
 .star-btn {
@@ -204,10 +240,10 @@ body {
 
 /* Модальное окно звонков */
 .modal-card {
-  background: rgba(15, 18, 35, 0.88);
+  background: var(--modal-bg);
   backdrop-filter: blur(28px);
   -webkit-backdrop-filter: blur(28px);
-  border: 1px solid rgba(255, 255, 255, 0.16);
+  border: 1px solid var(--modal-border);
 }
 
 .no-scrollbar::-webkit-scrollbar {
