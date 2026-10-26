@@ -18,36 +18,105 @@ const state = {
   notifLeadMinutes: parseInt(localStorage.getItem("my_schedule_notif_lead") || "5", 10),
 };
 
-// Реальное расписание звонков колледжа
-const DEFAULT_BELLS = [
-  { num: 1, startStr: "08:15", endStr: "09:50" },
-  { num: 2, startStr: "10:00", endStr: "11:35" },
-  { num: 3, startStr: "12:05", endStr: "13:40" },
-  { num: 4, startStr: "13:50", endStr: "15:25" },
-  { num: 5, startStr: "15:35", endStr: "17:10" },
-  { num: 6, startStr: "17:20", endStr: "18:55" },
-  { num: 7, startStr: "19:05", endStr: "20:40" },
-];
+// Очистка устаревших версий расписания звонков из localStorage
+try {
+  localStorage.removeItem("my_schedule_bells");
+  localStorage.removeItem("my_schedule_bells_v2");
+} catch (_) {}
+
+// Официальное расписание звонков колледжа на 2026–2027 учебный год
+const OFFICIAL_BELLS = {
+  // ПОНЕДЕЛЬНИК: Линейка (40 мин), 1 пара в 09:00, большая перемена 12:20 – 12:50
+  monday: [
+    { num: 1, startStr: "08:15", endStr: "08:55", label: "Линейка" },
+    { num: 2, startStr: "09:00", endStr: "10:35", label: "1 пара" },
+    { num: 3, startStr: "10:45", endStr: "12:20", label: "2 пара" },
+    { num: 4, startStr: "12:50", endStr: "14:25", label: "3 пара" },
+    { num: 5, startStr: "14:35", endStr: "16:10", label: "4 пара" },
+    { num: 6, startStr: "16:20", endStr: "17:55", label: "5 пара" },
+  ],
+  // ВТОРНИК – ПЯТНИЦА: стандартный график, большая перемена 11:35 – 12:05
+  weekday: [
+    { num: 1, startStr: "08:15", endStr: "09:50", label: "1 пара" },
+    { num: 2, startStr: "10:00", endStr: "11:35", label: "2 пара" },
+    { num: 3, startStr: "12:05", endStr: "13:40", label: "3 пара" },
+    { num: 4, startStr: "13:50", endStr: "15:25", label: "4 пара" },
+    { num: 5, startStr: "15:35", endStr: "17:05", label: "5 пара" },
+    { num: 6, startStr: "17:15", endStr: "18:45", label: "6 пара" },
+    { num: 7, startStr: "18:55", endStr: "20:25", label: "7 пара" },
+  ],
+  // СУББОТА: укороченные пары по 60 минут
+  saturday: [
+    { num: 1, startStr: "08:15", endStr: "09:15", label: "1 пара" },
+    { num: 2, startStr: "09:25", endStr: "10:25", label: "2 пара" },
+    { num: 3, startStr: "10:35", endStr: "11:35", label: "3 пара" },
+    { num: 4, startStr: "11:45", endStr: "12:45", label: "4 пара" },
+    { num: 5, startStr: "12:55", endStr: "13:55", label: "5 пара" },
+  ],
+};
 
 function timeToMinutes(str) {
+  if (!str) return 0;
   const [h, m] = str.split(":").map(Number);
-  return h * 60 + m;
+  return (h || 0) * 60 + (m || 0);
 }
 
-function loadBellSchedule() {
-  const saved = localStorage.getItem("my_schedule_bells_v2");
-  const raw = saved ? JSON.parse(saved) : DEFAULT_BELLS;
-  return raw.map((b) => ({
+function processBellList(list) {
+  return list.map((b) => ({
     num: b.num,
     startStr: b.startStr,
     endStr: b.endStr,
+    label: b.label || `${b.num} пара`,
     start: timeToMinutes(b.startStr),
     end: timeToMinutes(b.endStr),
     timeStr: `${b.startStr}–${b.endStr}`,
   }));
 }
 
-let BELL_SCHEDULE = loadBellSchedule();
+function loadAllBellSchedules() {
+  const saved = localStorage.getItem("my_schedule_bells_v3");
+  if (saved) {
+    try {
+      const parsed = JSON.parse(saved);
+      return {
+        monday: processBellList(parsed.monday || OFFICIAL_BELLS.monday),
+        weekday: processBellList(parsed.weekday || OFFICIAL_BELLS.weekday),
+        saturday: processBellList(parsed.saturday || OFFICIAL_BELLS.saturday),
+      };
+    } catch (e) {
+      console.warn("Ошибка чтения звонков из localStorage, сброс к заводским:", e);
+    }
+  }
+  return {
+    monday: processBellList(OFFICIAL_BELLS.monday),
+    weekday: processBellList(OFFICIAL_BELLS.weekday),
+    saturday: processBellList(OFFICIAL_BELLS.saturday),
+  };
+}
+
+let ALL_BELLS = loadAllBellSchedules();
+
+function getDayType(dayInfo) {
+  if (!dayInfo) {
+    const dayOfWeek = new Date().getDay();
+    if (dayOfWeek === 1) return "monday";
+    if (dayOfWeek === 6) return "saturday";
+    if (dayOfWeek === 0) return "sunday";
+    return "weekday";
+  }
+  const str = dayInfo.toLowerCase();
+  if (str.includes("пн") || str.includes("понедельник")) return "monday";
+  if (str.includes("сб") || str.includes("суббота")) return "saturday";
+  if (str.includes("вс") || str.includes("воскресенье")) return "sunday";
+  return "weekday";
+}
+
+function getBellsForDay(dayInfo) {
+  const type = getDayType(dayInfo);
+  if (type === "monday") return ALL_BELLS.monday;
+  if (type === "saturday") return ALL_BELLS.saturday;
+  return ALL_BELLS.weekday;
+}
 
 // Очистка текста от переносов строк и лишних пробелов с сайта колледжа
 function cleanString(str) {
@@ -55,9 +124,9 @@ function cleanString(str) {
   return str.replace(/\r?\n|\r/g, " ").replace(/\s+/g, " ").trim();
 }
 
-// PWA Service Worker (v6)
+// PWA Service Worker (v7)
 if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("/static/sw.js?v=6").then((reg) => {
+  navigator.serviceWorker.register("/static/sw.js?v=7").then((reg) => {
     reg.update();
   }).catch(console.error);
 }
@@ -527,12 +596,15 @@ function renderDaySchedule() {
   const list = document.createElement("div");
   list.className = "space-y-3.5";
 
+  const dayBells = getBellsForDay(currentDay ? currentDay.day_info : null);
+
   pairNumbers.forEach((num) => {
     const pairLessons = pairsMap.get(num);
-    const bell = BELL_SCHEDULE.find((b) => b.num === num);
+    const bell = dayBells.find((b) => b.num === num);
     const timeStr = bell ? bell.timeStr : `Пара ${num}`;
     const startStr = bell ? bell.startStr : "";
     const endStr = bell ? bell.endStr : "";
+    const pairLabel = bell ? bell.label : `${num} пара`;
 
     const card = document.createElement("div");
     card.className = "liquid-card p-4";
@@ -558,7 +630,7 @@ function renderDaySchedule() {
 
           <div class="flex flex-col flex-shrink-0 text-right min-w-[55px]">
             <span class="font-display text-sm font-bold text-sky-800 dark:text-cyan-300 leading-tight bg-sky-100/90 dark:bg-cyan-500/10 px-2.5 py-0.5 rounded-lg border border-sky-300/80 dark:border-cyan-500/25 text-center">${room || "—"}</span>
-            <span class="text-xs text-slate-500 dark:text-slate-400 leading-tight mt-1 text-center font-medium">${num} пара</span>
+            <span class="text-xs text-slate-500 dark:text-slate-400 leading-tight mt-1 text-center font-medium">${pairLabel}</span>
           </div>
         </div>
       `;
@@ -587,7 +659,7 @@ function renderDaySchedule() {
 
             <div class="flex flex-col flex-shrink-0 text-right min-w-[55px]">
               <span class="font-display text-sm font-bold text-sky-800 dark:text-cyan-300 leading-tight bg-sky-100/90 dark:bg-cyan-500/10 px-2.5 py-0.5 rounded-lg border border-sky-300/80 dark:border-cyan-500/25 text-center">${room || "—"}</span>
-              <span class="text-xs text-slate-500 dark:text-slate-400 leading-tight mt-1 text-center font-medium">${num} пара</span>
+              <span class="text-xs text-slate-500 dark:text-slate-400 leading-tight mt-1 text-center font-medium">${pairLabel}</span>
             </div>
           </div>
         `;
@@ -626,7 +698,7 @@ function renderDaySchedule() {
           <div class="space-y-3">
             <div class="flex items-center justify-between">
               <span class="font-display text-sm font-bold text-slate-900 dark:text-white tracking-wide">${timeStr}</span>
-              <span class="text-xs text-slate-600 dark:text-slate-300 px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10">${num}-я пара</span>
+              <span class="text-xs text-slate-600 dark:text-slate-300 px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 font-medium">${pairLabel}</span>
             </div>
 
             <div class="card-divider"></div>
@@ -693,6 +765,9 @@ function updateLiveStatusBar() {
     return;
   }
 
+  // Получаем актуальное расписание звонков ДЛЯ СЕГОДНЯШНЕГО ДНЯ
+  const todayBells = getBellsForDay(todayData.day_info);
+
   // Проверка пуш-уведомлений о скором начале пары (например, за 5 минут)
   checkPairNotificationAlerts(todayData);
 
@@ -703,7 +778,7 @@ function updateLiveStatusBar() {
   let activePairNum = null;
   let activeBell = null;
 
-  for (const bell of BELL_SCHEDULE) {
+  for (const bell of todayBells) {
     const matching = todayData.lessons.filter((l) => l.number === bell.num);
     if (matching.length === 0) continue;
 
@@ -717,7 +792,7 @@ function updateLiveStatusBar() {
       break;
     }
 
-    if (currentMinutes < bell.start && currentMinutes >= bell.start - 30) {
+    if (currentMinutes < bell.start && currentMinutes >= bell.start - 35) {
       nextLessons = matching;
       activePairNum = bell.num;
       activeBell = bell;
@@ -766,7 +841,7 @@ function updateLiveStatusBar() {
       <div class="flex items-center justify-between text-xs">
         <div class="flex items-center gap-2">
           <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
-          <span class="font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider text-[11px]">Идёт ${activePairNum} пара</span>
+          <span class="font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider text-[11px]">Идёт ${activeBell.label}</span>
         </div>
         <span class="font-display font-bold text-xs text-slate-900 dark:text-white bg-slate-100/90 dark:bg-white/10 px-3 py-1 rounded-full border border-slate-200 dark:border-white/10">
           Осталось ${mins}м ${secs < 10 ? "0" : ""}${secs}с
@@ -803,6 +878,8 @@ function updateLiveStatusBar() {
     bar.classList.remove("hidden");
     const mins = Math.floor(secondsRemaining / 60);
     const secs = secondsRemaining % 60;
+    const isBigBreak = secondsRemaining > 15 * 60;
+    const breakTitle = isBigBreak ? "Большая перемена" : "Перемена";
 
     let nextTitle = "";
     if (isTeacher) {
@@ -815,7 +892,7 @@ function updateLiveStatusBar() {
       <div class="flex items-center justify-between text-xs">
         <div class="flex items-center gap-2">
           <span class="w-2 h-2 rounded-full bg-amber-500"></span>
-          <span class="font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider text-[11px]">Перемена</span>
+          <span class="font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider text-[11px]">${breakTitle}</span>
         </div>
         <span class="font-display font-bold text-xs text-slate-900 dark:text-white bg-slate-100/90 dark:bg-white/10 px-3 py-1 rounded-full border border-slate-200 dark:border-white/10">
           До звонка ${mins}м ${secs < 10 ? "0" : ""}${secs}с
@@ -823,7 +900,7 @@ function updateLiveStatusBar() {
       </div>
 
       <div class="pt-0.5">
-        <div class="text-xs text-slate-600 dark:text-slate-300">Скоро <span class="font-bold text-slate-900 dark:text-white">${activePairNum} пара:</span> ${nextTitle}</div>
+        <div class="text-xs text-slate-600 dark:text-slate-300">Скоро <span class="font-bold text-slate-900 dark:text-white">${activeBell.label}:</span> ${nextTitle}</div>
       </div>
     `;
   } else {
@@ -861,29 +938,23 @@ function updateThemeIcon(theme) {
 // ─────────────────────────────────────────────
 // 10. Настройки звонков
 // ─────────────────────────────────────────────
+let currentBellModalTab = "weekday"; // "weekday" | "monday" | "saturday"
+
+function switchBellTab(tab) {
+  currentBellModalTab = tab;
+  renderBellSettingsInputs();
+}
+
 function openBellSettings() {
   const modal = document.getElementById("bell-modal");
-  const container = document.getElementById("bell-inputs");
-  if (!modal || !container) return;
+  if (!modal) return;
 
-  container.innerHTML = "";
+  // Автоматически выбираем вкладку дня недели для выбранного в данный момент дня
+  const activeDay = state.currentSchedule && state.currentSchedule.days ? state.currentSchedule.days[state.selectedDayIndex] : null;
+  const dayType = getDayType(activeDay ? activeDay.day_info : null);
+  currentBellModalTab = (dayType === "monday" || dayType === "saturday") ? dayType : "weekday";
 
-  BELL_SCHEDULE.forEach((b) => {
-    const row = document.createElement("div");
-    row.className = "flex items-center justify-between gap-2 p-2.5 rounded-2xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-xs";
-    row.innerHTML = `
-      <span class="font-display font-bold text-slate-800 dark:text-white w-14">№${b.num} пара</span>
-      <div class="flex items-center gap-1.5 flex-1 justify-end font-mono">
-        <input type="time" id="bell-start-${b.num}" value="${b.startStr}"
-          class="px-2.5 py-1.5 rounded-xl bg-white dark:bg-white/10 border border-slate-300 dark:border-white/15 text-slate-900 dark:text-white font-mono text-center focus:outline-none focus:border-cyan-400" />
-        <span class="text-slate-400">–</span>
-        <input type="time" id="bell-end-${b.num}" value="${b.endStr}"
-          class="px-2.5 py-1.5 rounded-xl bg-white dark:bg-white/10 border border-slate-300 dark:border-white/15 text-slate-900 dark:text-white font-mono text-center focus:outline-none focus:border-cyan-400" />
-      </div>
-    `;
-    container.appendChild(row);
-  });
-
+  renderBellSettingsInputs();
   modal.classList.remove("hidden");
   if (window.lucide) lucide.createIcons();
 }
@@ -892,32 +963,85 @@ function closeBellSettings() {
   document.getElementById("bell-modal")?.classList.add("hidden");
 }
 
-function saveBellSettings() {
-  const newBells = [];
-  BELL_SCHEDULE.forEach((b) => {
-    const startInput = document.getElementById(`bell-start-${b.num}`);
-    const endInput = document.getElementById(`bell-end-${b.num}`);
-    if (startInput && endInput) {
-      newBells.push({
-        num: b.num,
-        startStr: startInput.value,
-        endStr: endInput.value,
-      });
+function renderBellSettingsInputs() {
+  const container = document.getElementById("bell-inputs");
+  const desc = document.getElementById("bell-tab-description");
+  if (!container) return;
+
+  // Подсветка активной вкладки дня
+  ["weekday", "monday", "saturday"].forEach((tab) => {
+    const btn = document.getElementById(`bell-tab-${tab}`);
+    if (btn) {
+      if (tab === currentBellModalTab) {
+        btn.className = "flex-1 py-1.5 rounded-xl font-bold text-white bg-gradient-to-r from-violet-600 to-indigo-600 shadow-sm transition-all text-center";
+      } else {
+        btn.className = "flex-1 py-1.5 rounded-xl text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-all text-center";
+      }
     }
   });
 
-  localStorage.setItem("my_schedule_bells_v2", JSON.stringify(newBells));
-  BELL_SCHEDULE = loadBellSchedule();
+  if (desc) {
+    if (currentBellModalTab === "monday") {
+      desc.textContent = "Понедельник: Линейка (08:15–08:55), пары со смещённым временем, большая перемена 12:20 – 12:50.";
+    } else if (currentBellModalTab === "saturday") {
+      desc.textContent = "Суббота: укороченные пары по 60 минут с 10-минутными переменами.";
+    } else {
+      desc.textContent = "Вторник – Пятница: стандартный график. Большая перемена: 11:35 – 12:05 (30 мин).";
+    }
+  }
+
+  container.innerHTML = "";
+  const list = ALL_BELLS[currentBellModalTab] || [];
+
+  list.forEach((b) => {
+    const row = document.createElement("div");
+    row.className = "flex items-center justify-between gap-2 p-2.5 rounded-2xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-xs";
+    row.innerHTML = `
+      <span class="font-display font-bold text-slate-800 dark:text-white w-20 truncate">${b.label || `№${b.num} пара`}</span>
+      <div class="flex items-center gap-1.5 flex-1 justify-end font-mono">
+        <input type="time" id="bell-start-${b.num}" value="${b.startStr}"
+          class="px-2 py-1 rounded-xl bg-white dark:bg-white/10 border border-slate-300 dark:border-white/15 text-slate-900 dark:text-white font-mono text-center focus:outline-none focus:border-cyan-400" />
+        <span class="text-slate-400">–</span>
+        <input type="time" id="bell-end-${b.num}" value="${b.endStr}"
+          class="px-2 py-1 rounded-xl bg-white dark:bg-white/10 border border-slate-300 dark:border-white/15 text-slate-900 dark:text-white font-mono text-center focus:outline-none focus:border-cyan-400" />
+      </div>
+    `;
+    container.appendChild(row);
+  });
+}
+
+function saveBellSettings() {
+  const currentList = ALL_BELLS[currentBellModalTab] || [];
+  const updated = currentList.map((b) => {
+    const startInput = document.getElementById(`bell-start-${b.num}`);
+    const endInput = document.getElementById(`bell-end-${b.num}`);
+    return {
+      num: b.num,
+      label: b.label,
+      startStr: startInput ? startInput.value : b.startStr,
+      endStr: endInput ? endInput.value : b.endStr,
+    };
+  });
+
+  const toSave = {
+    monday: currentBellModalTab === "monday" ? updated : ALL_BELLS.monday,
+    weekday: currentBellModalTab === "weekday" ? updated : ALL_BELLS.weekday,
+    saturday: currentBellModalTab === "saturday" ? updated : ALL_BELLS.saturday,
+  };
+
+  localStorage.setItem("my_schedule_bells_v3", JSON.stringify(toSave));
+  ALL_BELLS = loadAllBellSchedules();
   closeBellSettings();
   renderDaySchedule();
+  updateLiveStatusBar();
 }
 
 function resetDefaultBells() {
-  localStorage.removeItem("my_schedule_bells_v2");
-  localStorage.removeItem("my_schedule_bells");
-  BELL_SCHEDULE = loadBellSchedule();
-  openBellSettings();
+  localStorage.removeItem("my_schedule_bells_v3");
+  ALL_BELLS = loadAllBellSchedules();
+  renderBellSettingsInputs();
   renderDaySchedule();
+  updateLiveStatusBar();
 }
 
 function showLoader(show) {
@@ -1179,7 +1303,9 @@ function checkPairNotificationAlerts(todayData) {
   const monthStr = String(now.getMonth() + 1).padStart(2, "0");
   const dateKey = `${dayStr}.${monthStr}`;
 
-  for (const bell of BELL_SCHEDULE) {
+  const todayBells = getBellsForDay(todayData.day_info);
+
+  for (const bell of todayBells) {
     const matching = todayData.lessons.filter((l) => l.number === bell.num);
     if (matching.length === 0) continue;
 
@@ -1206,7 +1332,7 @@ function checkPairNotificationAlerts(todayData) {
         }
 
         const roomText = room ? ` (каб. ${room})` : "";
-        const title = `🔔 До ${bell.num}-й пары ${state.notifLeadMinutes} мин!`;
+        const title = `🔔 До ${bell.label} осталось ${state.notifLeadMinutes} мин!`;
         const body = `${subject}${roomText}. Начало в ${bell.startStr}. Пора выдвигаться!`;
 
         sendSystemNotification(title, body, notifKey);

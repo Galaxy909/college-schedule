@@ -1,14 +1,14 @@
 /**
  * sw.js — Service Worker с Network-First стратегией и поддержкой уведомлений.
- * Версия v6: поддержка push-уведомлений о начале пар.
+ * Версия v7: динамическое расписание звонков по дням недели (Пн / Вт–Пт / Сб).
  */
 
-const CACHE_NAME = "schedule-v6";
+const CACHE_NAME = "schedule-v7";
 const STATIC_ASSETS = [
   "/static/index.html",
-  "/static/style.css?v=6",
-  "/static/app.js?v=6",
-  "/static/manifest.json?v=6",
+  "/static/style.css?v=7",
+  "/static/app.js?v=7",
+  "/static/manifest.json?v=7",
   "/static/icon-192.png",
   "/static/icon-512.png",
 ];
