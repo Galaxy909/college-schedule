@@ -1,52 +1,75 @@
-/* style.css — Liquid Glass & visionOS (Жидкое стекло Apple) с поддержкой тёмной и светлой тем */
+/* style.css — Pure Apple iOS (iOS 18 Native HIG) 
+   Никакого нейро-слопа, псевдо-стекла и неоновых градиентов.
+   Истинный системный дизайн Apple: OLED True Black, чистый серый фон,
+   цветовое кодирование предметов, нативные элементы интерфейса. */
 
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 
 :root {
-  --font-main: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --font-display: 'Space Grotesk', sans-serif;
-  
-  --bg-page: #05060f;
-  --text-primary: #f8fafc;
-  --text-secondary: #94a3b8;
-  --text-muted: #64748b;
-  
-  --glass-card: rgba(22, 26, 46, 0.58);
-  --glass-card-border: rgba(255, 255, 255, 0.12);
-  --glass-card-hover-border: rgba(255, 255, 255, 0.28);
-  
-  --capsule-bg: rgba(255, 255, 255, 0.08);
-  --capsule-border: rgba(255, 255, 255, 0.18);
-  
+  --font-main: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Plus Jakarta Sans", -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  /* Тёмная тема: Apple OLED True Black & Dark Mode HIG */
+  --bg-page: #000000;
+  --card-bg: #1c1c1e;
+  --card-bg-elevated: #2c2c2e;
+  --card-border: rgba(255, 255, 255, 0.09);
+  --card-hover-border: rgba(255, 255, 255, 0.2);
+  --card-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+
+  --segmented-bg: #2c2c2e;
+  --segmented-thumb: #636366;
+  --segmented-thumb-text: #ffffff;
+
+  --text-primary: #ffffff;
+  --text-secondary: #8e8e93;
+  --text-muted: #636366;
+
   --divider-color: rgba(255, 255, 255, 0.08);
-  --modal-bg: rgba(15, 18, 35, 0.92);
-  --modal-border: rgba(255, 255, 255, 0.16);
-  
-  --accent-cyan: #22d3ee;
-  --accent-violet: #a855f7;
-  --accent-indigo: #6366f1;
+  --modal-bg: #1c1c1e;
+  --modal-border: rgba(255, 255, 255, 0.12);
+
+  /* Палитра Apple System Colors */
+  --accent-blue: #0a84ff;
+  --accent-green: #30d158;
+  --accent-orange: #ff9f0a;
+  --accent-purple: #bf5af2;
+  --accent-indigo: #5e5ce6;
+  --accent-teal: #64d2ff;
+  --accent-red: #ff453a;
+  --accent-gray: #8e8e93;
 }
 
 [data-theme="light"] {
-  --bg-page: #f8fafc;
-  --text-primary: #0f172a;
-  --text-secondary: #475569;
-  --text-muted: #64748b;
-  
-  --glass-card: rgba(255, 255, 255, 0.88);
-  --glass-card-border: rgba(148, 163, 184, 0.25);
-  --glass-card-hover-border: rgba(99, 102, 241, 0.5);
-  
-  --capsule-bg: rgba(255, 255, 255, 0.95);
-  --capsule-border: rgba(148, 163, 184, 0.25);
-  
-  --divider-color: rgba(148, 163, 184, 0.2);
-  --modal-bg: rgba(255, 255, 255, 0.98);
-  --modal-border: rgba(148, 163, 184, 0.35);
-  
-  --accent-cyan: #0284c7;
-  --accent-violet: #7c3aed;
-  --accent-indigo: #4f46e5;
+  /* Светлая тема: Apple System Grouped Background */
+  --bg-page: #f2f2f7;
+  --card-bg: #ffffff;
+  --card-bg-elevated: #f2f2f7;
+  --card-border: rgba(0, 0, 0, 0.06);
+  --card-hover-border: rgba(0, 0, 0, 0.15);
+  --card-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+
+  --segmented-bg: #e5e5ea;
+  --segmented-thumb: #ffffff;
+  --segmented-thumb-text: #000000;
+
+  --text-primary: #000000;
+  --text-secondary: #6c6c70;
+  --text-muted: #8e8e93;
+
+  --divider-color: rgba(60, 60, 67, 0.12);
+  --modal-bg: #ffffff;
+  --modal-border: rgba(0, 0, 0, 0.1);
+
+  /* Палитра Apple System Colors для светлой темы */
+  --accent-blue: #007aff;
+  --accent-green: #34c759;
+  --accent-orange: #ff9500;
+  --accent-purple: #af52de;
+  --accent-indigo: #5856d6;
+  --accent-teal: #00c7be;
+  --accent-red: #ff3b30;
+  --accent-gray: #8e8e93;
 }
 
 body {
@@ -55,135 +78,104 @@ body {
   color: var(--text-primary);
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   -webkit-tap-highlight-color: transparent;
   position: relative;
   overflow-x: hidden;
-  transition: background-color 0.25s ease, color 0.25s ease;
+  font-variant-numeric: tabular-nums;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
-.font-display {
-  font-family: var(--font-display);
-}
-
-/* ═══════════════════════════════════════
-   1. АВРОРА (Фоновые неоновые световые пятна)
-═══════════════════════════════════════ */
-.aurora-bg {
-  position: fixed;
-  inset: 0;
-  overflow: hidden;
-  pointer-events: none;
-  z-index: 0;
-  transition: opacity 0.3s ease;
-}
-
-.aurora-1 {
-  position: absolute;
-  top: -120px;
-  left: -100px;
-  width: 500px;
-  height: 500px;
-  background: radial-gradient(circle, rgba(124, 58, 237, 0.28) 0%, transparent 70%);
-  filter: blur(60px);
-}
-
-.aurora-2 {
-  position: absolute;
-  top: 180px;
-  right: -120px;
-  width: 450px;
-  height: 450px;
-  background: radial-gradient(circle, rgba(6, 182, 212, 0.22) 0%, transparent 70%);
-  filter: blur(70px);
-}
-
-[data-theme="light"] .aurora-1 {
-  background: radial-gradient(circle, rgba(167, 139, 250, 0.16) 0%, transparent 70%);
-}
-
-[data-theme="light"] .aurora-2 {
-  background: radial-gradient(circle, rgba(56, 189, 248, 0.14) 0%, transparent 70%);
+.font-mono-val {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
 }
 
 /* ═══════════════════════════════════════
-   2. СТЕКЛЯННЫЕ КАРТОЧКИ (LIQUID GLASS)
+   1. КАРТОЧКИ APPLE SYSTEM (16px squircle)
 ═══════════════════════════════════════ */
-.liquid-card {
-  background: var(--glass-card);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid var(--glass-card-border);
-  border-radius: 22px;
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.25);
-  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+.liquid-card, .apple-card {
+  background-color: var(--card-bg);
+  border: 0.5px solid var(--card-border);
+  border-radius: 16px;
+  box-shadow: var(--card-shadow);
+  transition: transform 0.15s ease, border-color 0.15s ease;
+  position: relative;
 }
 
-[data-theme="light"] .liquid-card {
-  box-shadow: 0 6px 24px -2px rgba(15, 23, 42, 0.08);
+.liquid-card:hover, .apple-card:hover {
+  border-color: var(--card-hover-border);
 }
 
-.liquid-card:hover {
-  border-color: var(--glass-card-hover-border);
-  transform: translateY(-2px);
-  box-shadow: 0 14px 40px -4px rgba(124, 58, 237, 0.25);
-}
-
-[data-theme="light"] .liquid-card:hover {
-  box-shadow: 0 10px 30px -4px rgba(99, 102, 241, 0.2);
-}
-
-/* Парящая капсула (visionOS Capsule) */
-.vision-capsule {
-  background: var(--capsule-bg);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border: 1px solid var(--capsule-border);
-  box-shadow: 0 8px 32px -4px rgba(0, 0, 0, 0.3), inset 0 1px 1px 0 rgba(255, 255, 255, 0.2);
-}
-
-[data-theme="light"] .vision-capsule {
-  box-shadow: 0 6px 24px -4px rgba(15, 23, 42, 0.07), inset 0 1px 1px 0 rgba(255, 255, 255, 0.8);
+/* Капсула / блок Apple */
+.vision-capsule, .apple-capsule {
+  background-color: var(--card-bg);
+  border: 0.5px solid var(--card-border);
+  box-shadow: var(--card-shadow);
 }
 
 /* Разделительная линия */
 .card-divider {
-  height: 1px;
+  height: 0.5px;
   background-color: var(--divider-color);
-  margin: 0.75rem 0;
+  margin: 0.65rem 0;
 }
 
 /* ═══════════════════════════════════════
-   3. КАЛЕНДАРНАЯ ЛЕНТА ДНЕЙ
+   2. APPLE СЕГМЕНТНЫЙ ПЕРЕКЛЮЧАТЕЛЬ (Табы)
+═══════════════════════════════════════ */
+.apple-segmented {
+  background-color: var(--segmented-bg);
+  padding: 3px;
+  border-radius: 12px;
+  display: flex;
+  gap: 2px;
+}
+
+.segmented-btn {
+  padding: 6px 14px;
+  border-radius: 10px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  text-align: center;
+}
+
+.segmented-btn.active {
+  background-color: var(--segmented-thumb);
+  color: var(--segmented-thumb-text) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+
+/* ═══════════════════════════════════════
+   3. КАЛЕНДАРНАЯ ЛЕНТА ДНЕЙ (Apple Calendar)
 ═══════════════════════════════════════ */
 .day-pill {
-  min-width: 60px;
-  padding: 0.6rem 0.35rem;
-  border-radius: 18px;
-  background: var(--glass-card);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid var(--glass-card-border);
+  min-width: 54px;
+  padding: 0.55rem 0.3rem;
+  border-radius: 14px;
+  background-color: var(--card-bg);
+  border: 0.5px solid var(--card-border);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0.2rem;
+  gap: 0.15rem;
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all 0.15s ease;
   user-select: none;
 }
 
 .day-pill:hover {
-  border-color: rgba(99, 102, 241, 0.4);
-  transform: translateY(-1px);
+  border-color: var(--card-hover-border);
 }
 
 .day-pill.active {
-  background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%) !important;
-  border-color: rgba(255, 255, 255, 0.25) !important;
+  background-color: var(--accent-blue) !important;
+  border-color: transparent !important;
   color: #ffffff !important;
-  transform: scale(1.05);
-  box-shadow: 0 8px 24px -2px rgba(124, 58, 237, 0.45);
+  box-shadow: 0 3px 10px rgba(10, 132, 255, 0.35);
 }
 
 .day-pill.active span {
@@ -198,28 +190,27 @@ body {
   align-items: center;
   gap: 0.35rem;
   padding: 0.35rem 0.75rem;
-  border-radius: 9999px;
+  border-radius: 10px;
   font-size: 0.75rem;
   font-weight: 600;
   white-space: nowrap;
-  background: var(--capsule-bg);
-  backdrop-filter: blur(16px);
-  border: 1px solid var(--capsule-border);
+  background-color: var(--card-bg);
+  border: 0.5px solid var(--card-border);
   color: var(--text-secondary);
   transition: all 0.15s ease;
   user-select: none;
 }
 
 .chip-btn:hover {
-  border-color: rgba(99, 102, 241, 0.5);
+  border-color: var(--card-hover-border);
   color: var(--text-primary);
 }
 
 .chip-btn.active {
-  background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%);
-  border-color: rgba(255, 255, 255, 0.3);
+  background-color: var(--accent-blue) !important;
+  border-color: transparent !important;
   color: #ffffff !important;
-  box-shadow: 0 4px 16px rgba(124, 58, 237, 0.35);
+  box-shadow: 0 2px 8px rgba(10, 132, 255, 0.3);
 }
 
 .chip-btn.active span,
@@ -230,39 +221,40 @@ body {
 .star-btn {
   padding: 0.25rem;
   border-radius: 0.5rem;
-  color: #94a3b8;
+  color: #8e8e93;
   transition: all 0.15s ease;
 }
 
 .star-btn:hover, .star-btn.pinned {
-  color: #f59e0b;
+  color: #ff9f0a;
 }
 
-/* Модальное окно звонков */
+/* ═══════════════════════════════════════
+   5. МОДАЛЬНЫЕ ОКНА (Apple Sheet)
+═══════════════════════════════════════ */
 .modal-card {
-  background: var(--modal-bg);
-  backdrop-filter: blur(28px);
-  -webkit-backdrop-filter: blur(28px);
-  border: 1px solid var(--modal-border);
+  background-color: var(--modal-bg);
+  border: 0.5px solid var(--modal-border);
+  border-radius: 22px;
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.45);
 }
 
 /* Кнопки времени упреждения в модалке уведомлений */
 .lead-btn {
-  background: var(--capsule-bg);
+  background-color: var(--segmented-bg);
   color: var(--text-secondary);
-  border-color: var(--capsule-border);
+  border: 0.5px solid var(--card-border);
+  border-radius: 12px;
 }
 
 .lead-btn:hover {
   color: var(--text-primary);
-  border-color: rgba(99, 102, 241, 0.5);
 }
 
 .lead-btn.active {
-  background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%);
+  background-color: var(--accent-blue) !important;
   color: #ffffff !important;
-  border-color: rgba(255, 255, 255, 0.3);
-  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+  border-color: transparent !important;
 }
 
 .no-scrollbar::-webkit-scrollbar {

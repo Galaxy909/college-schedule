@@ -1,14 +1,14 @@
 /**
  * sw.js — Service Worker с Network-First стратегией и поддержкой уведомлений.
- * Версия v7: динамическое расписание звонков по дням недели (Пн / Вт–Пт / Сб).
+ * Версия v8: Pure Apple iOS (iOS 18 Native System Design).
  */
 
-const CACHE_NAME = "schedule-v7";
+const CACHE_NAME = "schedule-v8";
 const STATIC_ASSETS = [
   "/static/index.html",
-  "/static/style.css?v=7",
-  "/static/app.js?v=7",
-  "/static/manifest.json?v=7",
+  "/static/style.css?v=8",
+  "/static/app.js?v=8",
+  "/static/manifest.json?v=8",
   "/static/icon-192.png",
   "/static/icon-512.png",
 ];

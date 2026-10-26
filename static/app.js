@@ -124,9 +124,34 @@ function cleanString(str) {
   return str.replace(/\r?\n|\r/g, " ").replace(/\s+/g, " ").trim();
 }
 
-// PWA Service Worker (v7)
+// Цветовое кодирование предметов в стиле Apple iOS (чистый информационный цвет)
+function getSubjectColor(subject) {
+  if (!subject) return "var(--accent-blue)";
+  const s = subject.toLowerCase();
+  if (s.includes("линейка") || s.includes("разговор") || s.includes("классный")) return "var(--accent-gray)";
+  if (s.includes("механ") || s.includes("электро") || s.includes("техн") || s.includes("информ")) return "var(--accent-blue)";
+  if (s.includes("обзр") || s.includes("бжд") || s.includes("экол") || s.includes("биол")) return "var(--accent-green)";
+  if (s.includes("метр") || s.includes("материал") || s.includes("физ-ра") || s.includes("физич")) return "var(--accent-orange)";
+  if (s.includes("матем") || s.includes("физик") || s.includes("алгебр") || s.includes("геом")) return "var(--accent-purple)";
+  if (s.includes("истор") || s.includes("обществ") || s.includes("литер") || s.includes("русск") || s.includes("ин.яз") || s.includes("англ")) return "var(--accent-teal)";
+  if (s.includes("практик") || s.includes("уп") || s.includes("пп")) return "var(--accent-indigo)";
+
+  const palette = [
+    "var(--accent-blue)",
+    "var(--accent-green)",
+    "var(--accent-orange)",
+    "var(--accent-purple)",
+    "var(--accent-teal)",
+    "var(--accent-indigo)"
+  ];
+  let hash = 0;
+  for (let i = 0; i < s.length; i++) hash = (hash << 5) - hash + s.charCodeAt(i);
+  return palette[Math.abs(hash) % palette.length];
+}
+
+// PWA Service Worker (v8)
 if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("/static/sw.js?v=7").then((reg) => {
+  navigator.serviceWorker.register("/static/sw.js?v=8").then((reg) => {
     reg.update();
   }).catch(console.error);
 }
@@ -159,12 +184,14 @@ function initModeUI() {
   const groupBtn = document.getElementById("mode-group-btn");
   const teacherBtn = document.getElementById("mode-teacher-btn");
 
-  if (isTeacher) {
-    groupBtn.className = "px-4 py-1.5 rounded-xl text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-all";
-    teacherBtn.className = "px-4 py-1.5 rounded-xl font-bold text-white bg-gradient-to-r from-violet-600 to-indigo-600 shadow-lg shadow-indigo-500/30 transition-all";
-  } else {
-    groupBtn.className = "px-4 py-1.5 rounded-xl font-bold text-white bg-gradient-to-r from-violet-600 to-indigo-600 shadow-lg shadow-indigo-500/30 transition-all";
-    teacherBtn.className = "px-4 py-1.5 rounded-xl text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-all";
+  if (groupBtn && teacherBtn) {
+    if (isTeacher) {
+      groupBtn.className = "segmented-btn flex-1 transition-all";
+      teacherBtn.className = "segmented-btn active flex-1 transition-all";
+    } else {
+      groupBtn.className = "segmented-btn active flex-1 transition-all";
+      teacherBtn.className = "segmented-btn flex-1 transition-all";
+    }
   }
 
   renderPinnedChips();
@@ -607,7 +634,6 @@ function renderDaySchedule() {
     const pairLabel = bell ? bell.label : `${num} пара`;
 
     const card = document.createElement("div");
-    card.className = "liquid-card p-4";
 
     if (state.currentMode === "teacher") {
       // Режим преподавателя: 3 колонки
@@ -615,23 +641,25 @@ function renderDaySchedule() {
       const subj = cleanString(lesson.subject);
       const group = cleanString(lesson.group);
       const room = cleanString(lesson.room);
+      const subjColor = getSubjectColor(subj);
 
+      card.className = "apple-card p-3.5 pl-4 flex items-center justify-between gap-3 relative overflow-hidden";
       card.innerHTML = `
-        <div class="flex items-center justify-between gap-3">
-          <div class="flex flex-col flex-shrink-0 text-left min-w-[55px]">
-            <span class="font-display text-sm font-bold text-slate-900 dark:text-white leading-tight">${startStr || "—"}</span>
-            <span class="text-xs text-slate-500 dark:text-slate-400 leading-tight mt-0.5">${endStr}</span>
-          </div>
+        <div class="w-1.5 absolute left-0 top-0 bottom-0" style="background-color: ${subjColor};"></div>
 
-          <div class="flex-1 min-w-0 px-2 text-left">
-            <div class="font-display text-base font-bold text-slate-900 dark:text-white leading-snug truncate">${subj}</div>
-            ${group ? `<div class="text-xs font-semibold text-sky-700 dark:text-cyan-300 truncate mt-0.5">Группа ${group}</div>` : ""}
-          </div>
+        <div class="flex flex-col flex-shrink-0 text-left min-w-[62px] font-mono-val">
+          <span class="text-sm font-bold text-slate-900 dark:text-white leading-tight">${startStr || "—"}</span>
+          <span class="text-xs text-slate-500 dark:text-slate-400 leading-tight mt-0.5">${endStr}</span>
+        </div>
 
-          <div class="flex flex-col flex-shrink-0 text-right min-w-[55px]">
-            <span class="font-display text-sm font-bold text-sky-800 dark:text-cyan-300 leading-tight bg-sky-100/90 dark:bg-cyan-500/10 px-2.5 py-0.5 rounded-lg border border-sky-300/80 dark:border-cyan-500/25 text-center">${room || "—"}</span>
-            <span class="text-xs text-slate-500 dark:text-slate-400 leading-tight mt-1 text-center font-medium">${pairLabel}</span>
-          </div>
+        <div class="flex-1 min-w-0 px-2 text-left">
+          <div class="text-sm font-bold text-slate-900 dark:text-white leading-snug truncate">${subj}</div>
+          ${group ? `<div class="text-xs font-semibold text-sky-600 dark:text-sky-400 truncate mt-0.5">Группа ${group}</div>` : ""}
+        </div>
+
+        <div class="flex flex-col flex-shrink-0 text-right min-w-[55px]">
+          <span class="font-mono-val text-sm font-bold text-slate-900 dark:text-white bg-slate-100 dark:bg-white/10 px-2.5 py-1 rounded-xl text-center border border-slate-200 dark:border-white/10">${room || "—"}</span>
+          <span class="text-[10px] text-slate-500 dark:text-slate-400 leading-tight mt-1 text-center font-medium">${pairLabel}</span>
         </div>
       `;
     } else {
@@ -639,33 +667,39 @@ function renderDaySchedule() {
       const isSplit = pairLessons.length > 1 || pairLessons.some((l) => l.subgroup > 0);
 
       if (!isSplit) {
-        // Общая пара (3 колонки)
+        // Общая пара (3 колонки с цветовой полосой)
         const lesson = pairLessons[0];
         const subj = cleanString(lesson.subject);
         const teacher = cleanString(lesson.teacher);
         const room = cleanString(lesson.room);
+        const subjColor = getSubjectColor(subj);
 
+        card.className = "apple-card p-3.5 pl-4 flex items-center justify-between gap-3 relative overflow-hidden";
         card.innerHTML = `
-          <div class="flex items-center justify-between gap-3">
-            <div class="flex flex-col flex-shrink-0 text-left min-w-[55px]">
-              <span class="font-display text-sm font-bold text-slate-900 dark:text-white leading-tight">${startStr || "—"}</span>
-              <span class="text-xs text-slate-500 dark:text-slate-400 leading-tight mt-0.5">${endStr}</span>
-            </div>
+          <div class="w-1.5 absolute left-0 top-0 bottom-0" style="background-color: ${subjColor};"></div>
 
-            <div class="flex-1 min-w-0 px-2 text-left">
-              <div class="font-display text-base font-bold text-slate-900 dark:text-white leading-snug truncate">${subj}</div>
-              ${teacher ? `<div class="text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5 font-medium">${teacher}</div>` : ""}
-            </div>
+          <div class="flex flex-col flex-shrink-0 text-left min-w-[62px] font-mono-val">
+            <span class="text-sm font-bold text-slate-900 dark:text-white leading-tight">${startStr || "—"}</span>
+            <span class="text-xs text-slate-500 dark:text-slate-400 leading-tight mt-0.5">${endStr}</span>
+          </div>
 
-            <div class="flex flex-col flex-shrink-0 text-right min-w-[55px]">
-              <span class="font-display text-sm font-bold text-sky-800 dark:text-cyan-300 leading-tight bg-sky-100/90 dark:bg-cyan-500/10 px-2.5 py-0.5 rounded-lg border border-sky-300/80 dark:border-cyan-500/25 text-center">${room || "—"}</span>
-              <span class="text-xs text-slate-500 dark:text-slate-400 leading-tight mt-1 text-center font-medium">${pairLabel}</span>
-            </div>
+          <div class="flex-1 min-w-0 px-2 text-left">
+            <div class="text-sm font-bold text-slate-900 dark:text-white leading-snug truncate">${subj}</div>
+            ${teacher ? `<div class="text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5 font-medium">${teacher}</div>` : ""}
+          </div>
+
+          <div class="flex flex-col flex-shrink-0 text-right min-w-[55px]">
+            <span class="font-mono-val text-sm font-bold text-slate-900 dark:text-white bg-slate-100 dark:bg-white/10 px-2.5 py-1 rounded-xl text-center border border-slate-200 dark:border-white/10">${room || "—"}</span>
+            <span class="text-[10px] text-slate-500 dark:text-slate-400 leading-tight mt-1 text-center font-medium">${pairLabel}</span>
           </div>
         `;
       } else {
         // Пара с разделением на подгруппы
         const sortedLessons = [...pairLessons].sort((a, b) => a.subgroup - b.subgroup);
+        const primarySubj = cleanString(sortedLessons[0].subject);
+        const subjColor = getSubjectColor(primarySubj);
+
+        card.className = "apple-card p-4 space-y-3 relative overflow-hidden pl-4";
 
         let subgroupsHTML = "";
         sortedLessons.forEach((l, index) => {
@@ -674,10 +708,10 @@ function renderDaySchedule() {
           const room = cleanString(l.room);
           const isSub1 = l.subgroup === 1;
           const subTitle = l.subgroup > 0 ? `${l.subgroup}-я подгруппа` : "Вся группа";
-          
+
           const badgeClass = isSub1 
-            ? "text-sky-800 bg-sky-100 border-sky-300 dark:text-cyan-400 dark:bg-cyan-500/10 dark:border-cyan-500/20" 
-            : "text-purple-800 bg-purple-100 border-purple-300 dark:text-violet-400 dark:bg-violet-500/10 dark:border-violet-500/20";
+            ? "text-sky-700 bg-sky-100 border-sky-300 dark:text-sky-300 dark:bg-sky-500/15 dark:border-sky-500/25" 
+            : "text-purple-700 bg-purple-100 border-purple-300 dark:text-purple-300 dark:bg-purple-500/15 dark:border-purple-500/25";
 
           const divider = index > 0 ? `<div class="card-divider"></div>` : "";
 
@@ -686,24 +720,22 @@ function renderDaySchedule() {
             <div class="space-y-1 text-left">
               <div class="flex items-center justify-between text-xs">
                 <span class="${badgeClass} font-semibold text-[11px] px-2.5 py-0.5 rounded-full border">${subTitle}</span>
-                <span class="font-display font-bold text-sm text-slate-800 dark:text-white bg-slate-100 dark:bg-white/10 px-2.5 py-0.5 rounded-lg border border-slate-200 dark:border-white/10">${room}</span>
+                <span class="font-mono-val font-bold text-sm text-slate-900 dark:text-white bg-slate-100 dark:bg-white/10 px-2.5 py-0.5 rounded-lg border border-slate-200 dark:border-white/10">${room}</span>
               </div>
-              <div class="font-display text-base font-bold text-slate-900 dark:text-white pt-0.5 leading-snug">${subj}</div>
-              ${teacher ? `<div class="text-xs text-slate-500 dark:text-slate-400 font-medium">${teacher}</div>` : ""}
+              <div class="text-sm font-bold text-slate-900 dark:text-white pt-0.5 leading-snug">${subj}</div>
+              ${teacher ? `<div class="text-xs text-slate-500 dark:text-slate-400">${teacher}</div>` : ""}
             </div>
           `;
         });
 
         card.innerHTML = `
-          <div class="space-y-3">
-            <div class="flex items-center justify-between">
-              <span class="font-display text-sm font-bold text-slate-900 dark:text-white tracking-wide">${timeStr}</span>
-              <span class="text-xs text-slate-600 dark:text-slate-300 px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 font-medium">${pairLabel}</span>
-            </div>
-
-            <div class="card-divider"></div>
-            ${subgroupsHTML}
+          <div class="w-1.5 absolute left-0 top-0 bottom-0" style="background-color: ${subjColor};"></div>
+          <div class="flex items-center justify-between">
+            <span class="font-mono-val text-sm font-bold text-slate-900 dark:text-white tracking-wide">${timeStr}</span>
+            <span class="text-xs text-slate-600 dark:text-slate-300 px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 font-medium">${pairLabel}</span>
           </div>
+          <div class="card-divider"></div>
+          ${subgroupsHTML}
         `;
       }
     }
@@ -840,36 +872,36 @@ function updateLiveStatusBar() {
     bar.innerHTML = `
       <div class="flex items-center justify-between text-xs">
         <div class="flex items-center gap-2">
-          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+          <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
           <span class="font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider text-[11px]">Идёт ${activeBell.label}</span>
         </div>
-        <span class="font-display font-bold text-xs text-slate-900 dark:text-white bg-slate-100/90 dark:bg-white/10 px-3 py-1 rounded-full border border-slate-200 dark:border-white/10">
+        <span class="font-mono-val font-semibold text-xs text-slate-800 dark:text-slate-200 bg-slate-100 dark:bg-white/10 px-3 py-1 rounded-full border border-slate-200 dark:border-white/10">
           Осталось ${mins}м ${secs < 10 ? "0" : ""}${secs}с
         </span>
       </div>
 
       <div class="flex items-center justify-between gap-3 pt-0.5">
         <div class="space-y-0.5 min-w-0 flex-1">
-          <h2 class="font-display text-lg font-bold text-slate-900 dark:text-white tracking-tight leading-tight truncate">
+          <h2 class="text-lg font-bold text-slate-900 dark:text-white tracking-tight leading-tight truncate">
             ${subjectTitle}
           </h2>
-          ${personOrGroup ? `<div class="text-xs text-slate-600 dark:text-slate-300 truncate">${personOrGroup}</div>` : ""}
+          ${personOrGroup ? `<div class="text-xs text-slate-500 dark:text-slate-400 truncate">${personOrGroup}</div>` : ""}
         </div>
 
-        <div class="flex flex-col items-center justify-center px-3.5 py-2 rounded-2xl bg-slate-100/80 dark:bg-white/5 border border-slate-200 dark:border-white/15 flex-shrink-0">
+        <div class="flex flex-col items-center justify-center px-3.5 py-1.5 rounded-xl bg-slate-100 dark:bg-white/10 border border-slate-200 dark:border-white/15 flex-shrink-0">
           <span class="text-[9px] text-slate-500 dark:text-slate-400 uppercase tracking-widest font-semibold">Кабинет</span>
-          <span class="font-display text-lg font-bold text-sky-700 dark:text-cyan-300">${roomTitle}</span>
+          <span class="font-mono-val text-base font-bold text-sky-600 dark:text-sky-400">${roomTitle}</span>
         </div>
       </div>
 
-      <!-- Градиентный прогресс-бар -->
+      <!-- Прогресс-бар Apple -->
       <div class="space-y-1.5 pt-1">
-        <div class="w-full h-2 bg-slate-200 dark:bg-slate-900/60 rounded-full overflow-hidden border border-slate-300 dark:border-white/10 p-0.5">
-          <div class="h-full bg-gradient-to-r from-violet-500 via-indigo-400 to-cyan-400 rounded-full shadow-lg shadow-cyan-500/40 transition-all duration-1000" style="width: ${progressPercent.toFixed(1)}%;"></div>
+        <div class="w-full h-2 bg-slate-200 dark:bg-white/10 rounded-full overflow-hidden">
+          <div class="h-full bg-sky-500 dark:bg-sky-400 rounded-full transition-all duration-1000" style="width: ${progressPercent.toFixed(1)}%;"></div>
         </div>
-        <div class="flex justify-between text-[10px] text-slate-500 dark:text-slate-400 font-medium font-display">
+        <div class="flex justify-between text-[11px] text-slate-500 dark:text-slate-400 font-mono-val">
           <span>${activeBell.startStr}</span>
-          <span class="text-sky-700 dark:text-cyan-300 font-semibold">${Math.round(progressPercent)}% пройдено</span>
+          <span class="font-medium text-slate-700 dark:text-slate-300">${Math.round(progressPercent)}%</span>
           <span>${activeBell.endStr}</span>
         </div>
       </div>
@@ -891,10 +923,10 @@ function updateLiveStatusBar() {
     bar.innerHTML = `
       <div class="flex items-center justify-between text-xs">
         <div class="flex items-center gap-2">
-          <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+          <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
           <span class="font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider text-[11px]">${breakTitle}</span>
         </div>
-        <span class="font-display font-bold text-xs text-slate-900 dark:text-white bg-slate-100/90 dark:bg-white/10 px-3 py-1 rounded-full border border-slate-200 dark:border-white/10">
+        <span class="font-mono-val font-semibold text-xs text-slate-800 dark:text-slate-200 bg-slate-100 dark:bg-white/10 px-3 py-1 rounded-full border border-slate-200 dark:border-white/10">
           До звонка ${mins}м ${secs < 10 ? "0" : ""}${secs}с
         </span>
       </div>
@@ -973,7 +1005,7 @@ function renderBellSettingsInputs() {
     const btn = document.getElementById(`bell-tab-${tab}`);
     if (btn) {
       if (tab === currentBellModalTab) {
-        btn.className = "flex-1 py-1.5 rounded-xl font-bold text-white bg-gradient-to-r from-violet-600 to-indigo-600 shadow-sm transition-all text-center";
+        btn.className = "flex-1 py-1.5 rounded-xl font-bold text-white bg-sky-500 shadow-sm transition-all text-center";
       } else {
         btn.className = "flex-1 py-1.5 rounded-xl text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-all text-center";
       }
@@ -1086,7 +1118,7 @@ function updateNotifUI() {
     if (isEnabled) {
       icon.className = "w-4 h-4 text-emerald-500 animate-pulse";
     } else {
-      icon.className = "w-4 h-4 text-violet-600 dark:text-violet-400";
+      icon.className = "w-4 h-4 text-sky-500 dark:text-sky-400";
     }
   }
 
@@ -1112,7 +1144,7 @@ function updateNotifUI() {
       toggleBtn.className = "px-4 py-1.5 rounded-xl font-bold text-xs bg-rose-500/15 hover:bg-rose-500/25 text-rose-600 dark:text-rose-400 border border-rose-500/30 transition-all";
     } else {
       toggleBtn.textContent = "Включить";
-      toggleBtn.className = "px-4 py-1.5 rounded-xl font-bold text-xs bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white shadow-md shadow-indigo-500/20 transition-all";
+      toggleBtn.className = "px-4 py-1.5 rounded-xl font-bold text-xs bg-sky-500 hover:bg-sky-600 text-white transition-all shadow-sm";
     }
   }
 
