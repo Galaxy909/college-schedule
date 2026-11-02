@@ -6,8 +6,8 @@
 
 const state = {
   currentMode: localStorage.getItem("my_schedule_mode") || "group", // "group" | "teacher"
-  allGroups: [],
-  allTeachers: [],
+  allGroups: JSON.parse(localStorage.getItem("my_cached_groups") || "[]"),
+  allTeachers: JSON.parse(localStorage.getItem("my_cached_teachers") || "[]"),
   pinnedGroups: JSON.parse(localStorage.getItem("my_pinned_groups") || "[]"),
   pinnedTeachers: JSON.parse(localStorage.getItem("my_pinned_teachers") || "[]"),
   selectedGroupId: localStorage.getItem("my_schedule_group") || null,
@@ -17,6 +17,17 @@ const state = {
   notificationsEnabled: localStorage.getItem("my_schedule_notif_enabled") === "true",
   notifLeadMinutes: parseInt(localStorage.getItem("my_schedule_notif_lead") || "5", 10),
 };
+
+// ⚡ Мгновенная инициализация последнего сохраненного расписания из памяти устройства (0.01 сек!)
+try {
+  const initialCacheKey = state.currentMode === "teacher"
+    ? (state.selectedTeacherId ? `my_cached_sched_teacher_${state.selectedTeacherId}` : null)
+    : (state.selectedGroupId ? `my_cached_sched_group_${state.selectedGroupId}` : null);
+  if (initialCacheKey) {
+    const raw = localStorage.getItem(initialCacheKey);
+    if (raw) state.currentSchedule = JSON.parse(raw);
+  }
+} catch (_) {}
 
 // Очистка устаревших версий расписания звонков из localStorage
 try {
@@ -149,9 +160,9 @@ function getSubjectColor(subject) {
   return palette[Math.abs(hash) % palette.length];
 }
 
-// PWA Service Worker (v8)
+// PWA Service Worker (v9) со стратегией Stale-While-Revalidate
 if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("/static/sw.js?v=8").then((reg) => {
+  navigator.serviceWorker.register("/static/sw.js?v=9").then((reg) => {
     reg.update();
   }).catch(console.error);
 }
@@ -160,6 +171,12 @@ document.addEventListener("DOMContentLoaded", () => {
   initTheme();
   initModeUI();
   initNotificationsUI();
+
+  // ⚡ МГНОВЕННЫЙ ЗАПУСК ИЗ ПАМЯТИ (0.01 сек!)
+  // Пользователь сразу видит расписание без ожидания сервера Render
+  restoreInstantCachedView();
+
+  // Фоновая синхронизация с сервером
   loadData();
   startLiveTimer();
 
@@ -175,6 +192,33 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (window.lucide) lucide.createIcons();
 });
+
+// Мгновенная отрисовка сохранённых в телефоне данных
+function restoreInstantCachedView() {
+  const nameEl = document.getElementById("selected-item-name");
+  const subEl = document.getElementById("selected-item-sub");
+  const avatarEl = document.getElementById("selector-avatar");
+
+  if (state.currentMode === "teacher" && state.selectedTeacherId) {
+    const teacher = state.allTeachers.find((t) => t.id === state.selectedTeacherId);
+    if (nameEl) nameEl.textContent = teacher ? teacher.name : "Преподаватель";
+    if (subEl) subEl.textContent = "Преподаватель колледжа";
+    if (avatarEl) avatarEl.textContent = "👤";
+  } else if (state.selectedGroupId) {
+    const group = state.allGroups.find((g) => g.id === state.selectedGroupId);
+    if (nameEl) nameEl.textContent = group ? `Группа ${group.name}` : `Группа ${state.selectedGroupId}`;
+    if (subEl) subEl.textContent = "Студенческая группа";
+    if (avatarEl) avatarEl.textContent = group ? group.name.slice(0, 3) : "221";
+  }
+
+  // Если в кэше уже есть расписание — мгновенно отрисовываем дни и пары!
+  if (state.currentSchedule && state.currentSchedule.days && state.currentSchedule.days.length > 0) {
+    detectInitialDay();
+    renderDaysRibbon();
+    renderDaySchedule();
+    updateLiveStatusBar();
+  }
+}
 
 // ─────────────────────────────────────────────
 // 1. Управление режимами (Группы / Преподаватели)
@@ -226,7 +270,7 @@ function switchMode(newMode) {
 }
 
 // ─────────────────────────────────────────────
-// 2. Загрузка данных
+// 2. Загрузка данных (Фоновая, без зависания интерфейса)
 // ─────────────────────────────────────────────
 async function loadData() {
   try {
@@ -235,30 +279,27 @@ async function loadData() {
       fetch("/api/teachers"),
     ]);
 
-    if (groupsRes.ok) state.allGroups = await groupsRes.json();
-    if (teachersRes.ok) state.allTeachers = await teachersRes.json();
+    if (groupsRes.ok) {
+      state.allGroups = await groupsRes.json();
+      localStorage.setItem("my_cached_groups", JSON.stringify(state.allGroups));
+    }
+    if (teachersRes.ok) {
+      state.allTeachers = await teachersRes.json();
+      localStorage.setItem("my_cached_teachers", JSON.stringify(state.allTeachers));
+    }
 
     renderPinnedChips();
 
+    // Запускаем актуализацию выбранной группы/преподавателя
     if (state.currentMode === "teacher") {
-      if (state.selectedTeacherId) {
-        selectTeacher(state.selectedTeacherId);
-      } else if (state.pinnedTeachers.length > 0) {
-        selectTeacher(state.pinnedTeachers[0]);
-      } else if (state.allTeachers.length > 0) {
-        selectTeacher(state.allTeachers[0].id);
-      }
+      const tid = state.selectedTeacherId || (state.pinnedTeachers[0]) || (state.allTeachers[0]?.id);
+      if (tid) selectTeacher(tid);
     } else {
-      if (state.selectedGroupId) {
-        selectGroup(state.selectedGroupId);
-      } else if (state.pinnedGroups.length > 0) {
-        selectGroup(state.pinnedGroups[0]);
-      } else if (state.allGroups.length > 0) {
-        selectGroup(state.allGroups[0].id);
-      }
+      const gid = state.selectedGroupId || (state.pinnedGroups[0]) || (state.allGroups[0]?.id);
+      if (gid) selectGroup(gid);
     }
   } catch (err) {
-    console.error("Ошибка загрузки данных:", err);
+    console.warn("Фоновое обновление групп/преподавателей отложено:", err);
   }
 }
 
@@ -496,19 +537,45 @@ async function selectGroup(groupId) {
     if (avatarEl) avatarEl.textContent = group.name.slice(0, 3);
   }
 
-  showLoader(true);
+  const cacheKey = `my_cached_sched_group_${groupId}`;
+  let hasRenderedCached = false;
+
+  // ⚡ Мгновенно отрисовываем сохранённое расписание этой группы (0.01 сек!)
+  const cached = localStorage.getItem(cacheKey);
+  if (cached) {
+    try {
+      state.currentSchedule = JSON.parse(cached);
+      detectInitialDay();
+      renderDaysRibbon();
+      renderDaySchedule();
+      updateLiveStatusBar();
+      hasRenderedCached = true;
+    } catch (_) {}
+  }
+
+  // Спиннер крутим ТОЛЬКО если у нас вообще нет кэша для этой группы
+  if (!hasRenderedCached) {
+    showLoader(true);
+  }
+
   try {
     const res = await fetch(`/api/schedule/${groupId}`);
     if (!res.ok) throw new Error("Не удалось загрузить расписание группы");
 
-    state.currentSchedule = await res.json();
+    const freshSchedule = await res.json();
+    state.currentSchedule = freshSchedule;
+    localStorage.setItem(cacheKey, JSON.stringify(freshSchedule));
+
     detectInitialDay();
     renderDaysRibbon();
     renderDaySchedule();
+    updateLiveStatusBar();
   } catch (err) {
-    console.error(err);
-    document.getElementById("day-schedule-content").innerHTML =
-      `<div class="p-6 text-center text-xs text-red-500 font-medium">Ошибка при получении расписания</div>`;
+    console.warn("Фоновое обновление расписания группы отложено:", err);
+    if (!hasRenderedCached) {
+      document.getElementById("day-schedule-content").innerHTML =
+        `<div class="p-6 text-center text-xs text-red-500 font-medium">Сервер просыпается... Попробуй через пару секунд</div>`;
+    }
   } finally {
     showLoader(false);
   }
@@ -530,19 +597,45 @@ async function selectTeacher(teacherId) {
     if (avatarEl) avatarEl.textContent = "👤";
   }
 
-  showLoader(true);
+  const cacheKey = `my_cached_sched_teacher_${teacherId}`;
+  let hasRenderedCached = false;
+
+  // ⚡ Мгновенно отрисовываем сохранённое расписание преподавателя (0.01 сек!)
+  const cached = localStorage.getItem(cacheKey);
+  if (cached) {
+    try {
+      state.currentSchedule = JSON.parse(cached);
+      detectInitialDay();
+      renderDaysRibbon();
+      renderDaySchedule();
+      updateLiveStatusBar();
+      hasRenderedCached = true;
+    } catch (_) {}
+  }
+
+  // Спиннер крутим ТОЛЬКО если у нас вообще нет кэша
+  if (!hasRenderedCached) {
+    showLoader(true);
+  }
+
   try {
     const res = await fetch(`/api/schedule/teacher/${teacherId}`);
     if (!res.ok) throw new Error("Не удалось загрузить расписание преподавателя");
 
-    state.currentSchedule = await res.json();
+    const freshSchedule = await res.json();
+    state.currentSchedule = freshSchedule;
+    localStorage.setItem(cacheKey, JSON.stringify(freshSchedule));
+
     detectInitialDay();
     renderDaysRibbon();
     renderDaySchedule();
+    updateLiveStatusBar();
   } catch (err) {
-    console.error(err);
-    document.getElementById("day-schedule-content").innerHTML =
-      `<div class="p-6 text-center text-xs text-red-500 font-medium">Ошибка при получении расписания</div>`;
+    console.warn("Фоновое обновление расписания преподавателя отложено:", err);
+    if (!hasRenderedCached) {
+      document.getElementById("day-schedule-content").innerHTML =
+        `<div class="p-6 text-center text-xs text-red-500 font-medium">Сервер просыпается... Попробуй через пару секунд</div>`;
+    }
   } finally {
     showLoader(false);
   }
